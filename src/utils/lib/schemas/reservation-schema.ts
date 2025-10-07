@@ -1,4 +1,3 @@
-
 import { z } from "zod";
 
 export const reservationItemSchema = z.object({
@@ -13,12 +12,11 @@ export const reservationItemSchema = z.object({
   subtotal: z.number().min(0).default(0),
 });
 
-
 export const passengerSchema = z.object({
   id: z.string().optional(),
   name: z.string().min(1, "Nome obrigatório"),
   phone: z.string().optional(),
-  is_infant: z.boolean().default(false),
+  is_infant: z.boolean(),
 });
 
 export const reservationSchema = z.object({
@@ -37,7 +35,6 @@ export const reservationSchema = z.object({
     .nonempty("Adicione pelo menos 1 passageiro"),
   items: z.array(reservationItemSchema).nonempty("Adicione pelo menos 1 item"),
 });
-
 
 export type ReservationFormValues = z.infer<typeof reservationSchema>;
 export type ReservationItemForm = z.infer<typeof reservationItemSchema>;
