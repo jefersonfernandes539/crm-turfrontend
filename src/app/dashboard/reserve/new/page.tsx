@@ -52,7 +52,6 @@ const NovaReserva = () => {
 
   const selectedOperatorId = watch("operator_id");
 
-  // 🔹 Buscar Operadoras
   const fetchOperators = useCallback(async () => {
     const { data, error } = await supabase
       .from("operators")
@@ -71,7 +70,6 @@ const NovaReserva = () => {
     setOperators(data || []);
   }, []);
 
-  // 🔹 Buscar Vendedores
   const fetchSellers = useCallback(async () => {
     const { data, error } = await supabase
       .from("sellers")
@@ -89,7 +87,6 @@ const NovaReserva = () => {
     setSellers(data || []);
   }, []);
 
-  // 🔹 Buscar Pricebooks (itens disponíveis)
   const fetchPricebooks = useCallback(
     async (operatorId?: string) => {
       if (!operatorId) {
@@ -133,7 +130,6 @@ const NovaReserva = () => {
     fetchPricebooks(selectedOperatorId);
     setValue("code", genCode());
   }, [selectedOperatorId, fetchPricebooks, setValue]);
-
 
   const onSubmit = async (data: ReservationFormValues) => {
     try {
@@ -186,7 +182,7 @@ const NovaReserva = () => {
         reservation_id: reservationId,
         name: p.name,
         phone: p.phone,
-        is_infant: p.is_infant,
+        is_infant: p.is_infant ?? false,
       }));
 
       if (passengersPayload.length > 0) {
