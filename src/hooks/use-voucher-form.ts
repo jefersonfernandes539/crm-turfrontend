@@ -8,10 +8,10 @@ import {
   voucherSchema,
 } from "@/utils/lib/schemas/voucher-schema";
 import { generateVoucherCode } from "@/utils/lib/helpers/voucher-generate";
-
+import { Resolver } from "react-hook-form";
 export function useVoucherForm(): UseFormReturn<VoucherFormData> {
   const form = useForm<VoucherFormData>({
-    resolver: zodResolver(voucherSchema),
+    resolver: zodResolver(voucherSchema) as Resolver<VoucherFormData>,
     defaultValues: {
       codigo: generateVoucherCode(),
       vendedor: "",

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { Resolver, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Save } from "lucide-react";
 
@@ -35,7 +35,7 @@ const NovaReserva = () => {
     setValue,
     formState: { errors },
   } = useForm<ReservationFormValues>({
-    resolver: zodResolver(reservationSchema),
+    resolver: zodResolver(reservationSchema) as Resolver<ReservationFormValues>,
     defaultValues: {
       code: genCode(),
       contractor_name: "",
