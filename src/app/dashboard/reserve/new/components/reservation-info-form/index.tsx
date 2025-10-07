@@ -1,6 +1,11 @@
 "use client";
 import React from "react";
-import { Controller } from "react-hook-form";
+import {
+  Control,
+  Controller,
+  UseFormRegister,
+  FieldErrors,
+} from "react-hook-form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -11,13 +16,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+import { Operator } from "@/types/Operator";
 import { Seller } from "@/types/Seller";
+import { ReservationFormValues } from "@/utils/lib/schemas/reservation-schema";
 
 interface Props {
-  control: any;
-  register: any;
-  errors: any;
-  operators: { id: string; name: string }[];
+  control: Control<ReservationFormValues>;
+  register: UseFormRegister<ReservationFormValues>;
+  errors: FieldErrors<ReservationFormValues>;
+  operators: Operator[];
   sellers: Seller[];
 }
 
@@ -74,7 +82,7 @@ const ReservationInfoForm: React.FC<Props> = ({
         <div className="space-y-1">
           <Label>Vendedor</Label>
           <Controller
-            name="seller"
+            name="seller_id"
             control={control}
             render={({ field }) => (
               <Select onValueChange={field.onChange} value={field.value}>
@@ -83,7 +91,7 @@ const ReservationInfoForm: React.FC<Props> = ({
                 </SelectTrigger>
                 <SelectContent>
                   {sellers.map((s) => (
-                    <SelectItem key={s.id} value={s.name}>
+                    <SelectItem key={s.id} value={s.id}>
                       {s.name}
                     </SelectItem>
                   ))}
@@ -91,8 +99,10 @@ const ReservationInfoForm: React.FC<Props> = ({
               </Select>
             )}
           />
-          {errors.seller && (
-            <p className="text-sm text-destructive">{errors.seller.message}</p>
+          {errors.seller_id && (
+            <p className="text-sm text-destructive">
+              {errors.seller_id.message}
+            </p>
           )}
         </div>
 
@@ -117,11 +127,6 @@ const ReservationInfoForm: React.FC<Props> = ({
           {errors.date && (
             <p className="text-sm text-destructive">{errors.date.message}</p>
           )}
-        </div>
-
-        <div className="space-y-1">
-          <Label htmlFor="notes">Observações</Label>
-          <Input id="notes" {...register("notes")} placeholder="Opcional" />
         </div>
       </CardContent>
     </Card>

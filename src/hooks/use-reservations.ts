@@ -45,7 +45,6 @@ export function useReservations(searchTerm = "") {
   }, [fetchReservations]);
 
   const deleteReservation = async (id: string) => {
-    // Delete related passengers first
     const { error: passengersError } = await supabase
       .from("passengers")
       .delete()
@@ -59,8 +58,6 @@ export function useReservations(searchTerm = "") {
       });
       return false;
     }
-
-    // Delete related items
     const { error: itemsError } = await supabase
       .from("reservation_items")
       .delete()
@@ -75,7 +72,6 @@ export function useReservations(searchTerm = "") {
       return false;
     }
 
-    // Delete reservation
     const { error } = await supabase.from("reservations").delete().eq("id", id);
 
     if (error) {

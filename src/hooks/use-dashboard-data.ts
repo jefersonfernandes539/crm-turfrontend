@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import dayjs from "dayjs";
 import { supabase } from "@/services/supabaseClient";
-import { DashboardData, DashboardStats, DateRange } from "@/types/Dashboard";
+import { formatCurrency } from "@/utils/lib/helpers/formatCurrency";
+import { DashboardStats, DateRange } from "@/types/Dashboard";
+import { rank } from "@/utils/lib/xlsx-utils";
 
 const INITIAL_STATS: DashboardStats = {
   receita: "R$ 0,00",
@@ -18,101 +19,101 @@ export const useDashboardData = (dateRange: DateRange) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const formatCurrencyBRL = useCallback((value: number): string => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value || 0);
-  }, []);
+  const fetchData = useCallback(async () => {
+    if (!dateRange.from || !dateRange.to) return;
 
-  const loadDashboardData = useCallback(
-    async (period: DateRange) => {
-      if (!period.from || !period.to) {
-        setLoading(false);
-        return;
-      }
+    setLoading(true);
+    setError(null);
 
-      setLoading(true);
-      setError(null);
+    try {
+      const { data: salesData, error: salesError } = await supabase
+        .from("spreadsheet_sales")
+        .select("*");
 
-      const p_start = dayjs(period.from).startOf("day").toISOString();
-      const p_end = dayjs(period.to).add(1, "day").startOf("day").toISOString();
+      if (salesError) throw salesError;
 
-      try {
-        const [reservasResult, commissionsResult] = await Promise.allSettled([
-          supabase.rpc("dash_reservas", { p_start, p_end }),
-          supabase.rpc("dash_total_commissions", { p_start, p_end }),
-        ]);
+      const filteredSales = (salesData || []).filter((sale: any) => {
+        const saleDate = new Date(sale.data);
+        return saleDate >= dateRange.from! && saleDate <= dateRange.to!;
+      });
 
-        // Handle reservas data
-        if (reservasResult.status === "rejected") {
-          throw new Error("Erro ao carregar dados de reservas");
-        }
+      const totalPix = filteredSales.reduce(
+        (acc, sale) => acc + (Number(sale.pix) || 0),
+        0
+      );
 
-        const { data: dataReservas, error: errorReservas } =
-          reservasResult.value;
-        if (errorReservas) throw errorReservas;
+      const salesCount = filteredSales.length;
 
-        // Handle commissions data
-        if (commissionsResult.status === "rejected") {
-          throw new Error("Erro ao carregar dados de comissões");
-        }
+      const ranking = rank(
+        filteredSales.map((s) => ({
+          vendedor: s.vendedor,
+          comissao: s.comissao,
+        }))
+      ).sort((a, b) => b.total - a.total);
 
-        const { data: dataComissoes, error: errorComissoes } =
-          commissionsResult.value;
-        if (errorComissoes) throw errorComissoes;
+      const topSeller = ranking.length > 0 ? ranking[0].vendedor : "—";
 
-        const dashboardData: DashboardData = dataReservas?.[0] ?? {
-          receita_net: 0,
-          qtd: 0,
-          top_vendedor: "—",
-          top_count: 0,
-          parceiro_mes: "—",
-          parceiro_valor: 0,
-          parceiro_foto: null,
-        };
+      const { data: reservationsData, error: reservationsError } =
+        await supabase
+          .from("reservations")
+          .select("*, operators(name), sellers(name)");
 
-        setStats({
-          receita: formatCurrencyBRL(Number(dashboardData.receita_net)),
-          qtd: String(dashboardData.qtd),
-          comissoes: formatCurrencyBRL(Number(dataComissoes)),
-          topVendedor:
-            dashboardData.top_vendedor && dashboardData.top_vendedor !== "—"
-              ? `${dashboardData.top_vendedor} (${dashboardData.top_count} vendas)`
-              : "—",
-          parceiroMes: {
-            name: dashboardData.parceiro_mes || "—",
-            total: Number(dashboardData.parceiro_valor),
-            photo_url: dashboardData.parceiro_foto || null,
-          },
-        });
-      } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : "Erro desconhecido";
-        console.error("Error loading dashboard data:", err);
-        setError(errorMessage);
-        setStats(INITIAL_STATS);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [formatCurrencyBRL]
-  );
+      if (reservationsError) throw reservationsError;
+
+      const parceiroRanking: Record<string, number> = (reservationsData || [])
+        .filter((r: any) => {
+          const d = new Date(r.date);
+          return (
+            dateRange.from &&
+            dateRange.to &&
+            d >= dateRange.from &&
+            d <= dateRange.to
+          );
+        })
+        .reduce((acc: Record<string, number>, r: any) => {
+          const key = r.operators?.name || "—";
+          acc[key] = (acc[key] || 0) + Number(r.total_items_net || 0);
+          return acc;
+        }, {});
+
+      const parceiroMesName =
+        Object.keys(parceiroRanking).length > 0
+          ? Object.entries(parceiroRanking).sort((a, b) => b[1] - a[1])[0][0]
+          : "—";
+      const parceiroMesTotal = parceiroRanking[parceiroMesName] || 0;
+
+      setStats({
+        receita: formatCurrency(totalPix),
+        qtd: String(salesCount),
+        comissoes: formatCurrency(
+          filteredSales.reduce((acc, s) => acc + (Number(s.comissao) || 0), 0)
+        ),
+        topVendedor: topSeller,
+        parceiroMes: {
+          name: parceiroMesName,
+          total: parceiroMesTotal,
+          photo_url: null,
+        },
+      });
+    } catch (err: unknown) {
+      console.error(err);
+      const message = err instanceof Error ? err.message : "Erro desconhecido";
+      setError(message);
+      setStats(INITIAL_STATS);
+    } finally {
+      setLoading(false);
+    }
+  }, [dateRange]);
 
   useEffect(() => {
-    loadDashboardData(dateRange);
+    fetchData();
 
-    // Set up real-time subscriptions
     const salesChannel = supabase
       .channel("sales-live-home")
       .on(
         "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "sales",
-        },
-        () => loadDashboardData(dateRange)
+        { event: "*", schema: "public", table: "spreadsheet_sales" },
+        fetchData
       )
       .subscribe();
 
@@ -120,12 +121,8 @@ export const useDashboardData = (dateRange: DateRange) => {
       .channel("reservations-live-home")
       .on(
         "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "reservations",
-        },
-        () => loadDashboardData(dateRange)
+        { event: "*", schema: "public", table: "reservations" },
+        fetchData
       )
       .subscribe();
 
@@ -133,7 +130,7 @@ export const useDashboardData = (dateRange: DateRange) => {
       supabase.removeChannel(salesChannel);
       supabase.removeChannel(reservationsChannel);
     };
-  }, [dateRange, loadDashboardData]);
+  }, [fetchData]);
 
-  return { stats, loading, error, refetch: () => loadDashboardData(dateRange) };
+  return { stats, loading, error, refetch: fetchData };
 };

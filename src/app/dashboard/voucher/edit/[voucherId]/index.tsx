@@ -70,8 +70,8 @@ const EditVoucher: React.FC<EditVoucherProps> = ({ voucherId }) => {
 
   const [isGenerating, setIsGenerating] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // 🔎 Buscar voucher do Supabase
   useEffect(() => {
     if (!voucherId) {
       console.error("voucherId ausente!");
@@ -97,16 +97,17 @@ const EditVoucher: React.FC<EditVoucherProps> = ({ voucherId }) => {
           codigo: data.codigo,
           vendedor:
             data.vendedor || data.seller_name || data.operator_name || "",
-          contratante: data.cliente_nome || data.contratante || "",
+          contratante: data.cliente_nome || "",
           telefone: data.telefone || "",
-          embarque: data.hotel || data.embarque || "",
+          embarque: data.hotel || "",
           itens: data.payload?.itens || [],
           passageiros: data.payload?.passageiros || [],
-          total: data.total || data.valor_total_centavos / 100 || 0,
-          entrada: data.entrada || data.entrada_centavos / 100 || 0,
-          restante: data.restante || data.restante_centavos / 100 || 0,
-          observacoes: data.observacoes || data.obs || "",
+          total: data.valor_total_centavos / 100 || 0,
+          entrada: data.entrada_centavos / 100 || 0,
+          restante: data.restante_centavos / 100 || 0,
+          observacoes: data.obs || "",
         };
+        form.reset(formattedData);
 
         form.reset(formattedData);
       } catch (error) {
@@ -122,9 +123,8 @@ const EditVoucher: React.FC<EditVoucherProps> = ({ voucherId }) => {
     };
 
     fetchVoucher();
-  }, [voucherId, supabase, form]);
+  }, [voucherId, form]);
 
-  // 🔎 Recalcular restante
   const watchTotal = form.watch("total");
   const watchEntrada = form.watch("entrada");
 
@@ -133,14 +133,51 @@ const EditVoucher: React.FC<EditVoucherProps> = ({ voucherId }) => {
     form.setValue("restante", newRestante >= 0 ? newRestante : 0);
   }, [watchTotal, watchEntrada, form]);
 
-  // 🔎 Submit (gera PDF)
+  const handleSaveChanges = async () => {
+    setIsSaving(true);
+    try {
+      const values = form.getValues();
+      const { error } = await supabase
+        .from("vouchers")
+        .update({
+          seller_name: values.vendedor,
+          cliente_nome: values.contratante,
+          telefone: values.telefone,
+          hotel: values.embarque,
+          payload: { itens: values.itens, passageiros: values.passageiros },
+          valor_total_centavos: Math.round(values.total * 100),
+          entrada_centavos: Math.round(values.entrada * 100),
+          restante_centavos: Math.round(values.restante * 100),
+          obs: values.observacoes,
+        })
+        .eq("id", voucherId);
+
+      if (error) throw error;
+
+      Toast.Base({
+        title: "Alterações salvas!",
+        description: "Os dados do voucher foram atualizados com sucesso.",
+        variant: "success",
+      });
+    } catch (error: any) {
+      console.error("Erro ao salvar voucher:", error);
+      Toast.Base({
+        title: "Erro ao salvar",
+        description: error.message || "Não foi possível salvar as alterações.",
+        variant: "error",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const onSubmit = async (values: VoucherFormData) => {
     setIsGenerating(true);
     try {
       await gerarVoucherPDF(values);
       Toast.Base({
         title: "Voucher Gerado!",
-        description: "O download do seu voucher em PDF começará em breve.",
+        description: "O download do PDF começará em breve.",
         variant: "success",
       });
     } catch (error) {
@@ -148,7 +185,7 @@ const EditVoucher: React.FC<EditVoucherProps> = ({ voucherId }) => {
       Toast.Base({
         title: "Erro ao gerar voucher",
         description:
-          "Ocorreu um problema ao tentar gerar o PDF. Verifique o console para mais detalhes.",
+          "Ocorreu um problema ao tentar gerar o PDF. Verifique o console.",
         variant: "error",
       });
     } finally {
@@ -170,8 +207,6 @@ const EditVoucher: React.FC<EditVoucherProps> = ({ voucherId }) => {
           <h1 className="text-2xl font-bold text-btj-text">
             Gerador de Voucher Manual
           </h1>
-
-          {/* Informações Gerais */}
           <Card>
             <CardHeader>
               <CardTitle>Informações Gerais</CardTitle>
@@ -206,7 +241,6 @@ const EditVoucher: React.FC<EditVoucherProps> = ({ voucherId }) => {
             </CardContent>
           </Card>
 
-          {/* Dados do Cliente */}
           <Card>
             <CardHeader>
               <CardTitle>Dados do Cliente</CardTitle>
@@ -254,7 +288,6 @@ const EditVoucher: React.FC<EditVoucherProps> = ({ voucherId }) => {
             </CardContent>
           </Card>
 
-          {/* Passeios / Hospedagem */}
           <Card>
             <CardHeader>
               <CardTitle>Passeios / Hospedagem</CardTitle>
@@ -326,7 +359,6 @@ const EditVoucher: React.FC<EditVoucherProps> = ({ voucherId }) => {
             </CardContent>
           </Card>
 
-          {/* Passageiros */}
           <Card>
             <CardHeader>
               <CardTitle>Passageiros</CardTitle>
@@ -405,8 +437,6 @@ const EditVoucher: React.FC<EditVoucherProps> = ({ voucherId }) => {
               </Button>
             </CardContent>
           </Card>
-
-          {/* Resumo de Valores */}
           <Card>
             <CardHeader>
               <CardTitle>Resumo de Valores</CardTitle>
@@ -489,8 +519,10 @@ const EditVoucher: React.FC<EditVoucherProps> = ({ voucherId }) => {
             </CardFooter>
           </Card>
 
-          {/* Botão Gerar PDF */}
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-4">
+            <Button onClick={handleSaveChanges} disabled={isSaving}>
+              {isSaving ? "Salvando..." : "Salvar Alterações"}
+            </Button>
             <Button type="submit" disabled={isGenerating}>
               {isGenerating ? (
                 <>

@@ -31,8 +31,8 @@ import { Operator } from "@/types/Operator";
 import { PricebookItem } from "@/types/Pricebook";
 import { formatCurrency } from "@/utils/lib/helpers/formatCurrency";
 import eventBus from "@/utils/lib/helpers/eventBus";
-import { gerarVoucherPDF } from "@/utils/lib/helpers/download";
 import { Toast } from "@/components";
+import { gerarVoucherPDF } from "@/utils/lib/pdf/generateVoucherpdf";
 
 interface NovoVoucherFormProps {
   initialData?: VoucherFormData;

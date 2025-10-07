@@ -49,8 +49,8 @@ export function ItemsSection({
   selectedOperatorId,
 }: ItemsSectionProps) {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+    <Card className="w-full">
+      <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
         <div>
           <CardTitle>Itens do Voucher</CardTitle>
           <CardDescription>
@@ -61,6 +61,7 @@ export function ItemsSection({
           type="button"
           variant="outline"
           size="sm"
+          className="flex items-center mt-2 sm:mt-0"
           onClick={() =>
             appendItem({
               descricao: "",
@@ -74,13 +75,14 @@ export function ItemsSection({
           Adicionar Item
         </Button>
       </CardHeader>
+
       <CardContent className="space-y-3">
         {itemFields.map((field, index) => (
           <div
             key={field.id}
-            className="grid md:grid-cols-10 gap-3 p-3 border rounded-md items-end bg-background/50"
+            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-10 gap-3 p-3 border rounded-md items-start bg-background/50"
           >
-            <div className="md:col-span-4 space-y-1">
+            <div className="col-span-full md:col-span-4 space-y-1">
               <Label>Descrição *</Label>
               <Controller
                 name={`itens.${index}.descricao`}
@@ -92,7 +94,7 @@ export function ItemsSection({
                     value={field.value}
                     disabled={!selectedOperatorId}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue
                         placeholder={
                           !selectedOperatorId
@@ -118,33 +120,35 @@ export function ItemsSection({
               )}
             </div>
 
-            <div className="md:col-span-2 space-y-1">
+            <div className="col-span-full sm:col-span-1 md:col-span-2 space-y-1">
               <Label>Data</Label>
               <Input type="date" {...register(`itens.${index}.data`)} />
             </div>
 
-            <div className="md:col-span-1 space-y-1 ">
+            <div className="col-span-full sm:col-span-1 md:col-span-1 space-y-1">
               <Label>Horário</Label>
               <Input
                 type="time"
                 {...register(`itens.${index}.hora`)}
-                className="w-22"
+                className="w-full"
               />
             </div>
 
-            <div className="md:col-span-2 space-y-1 pl-4">
+            <div className="col-span-full md:col-span-2 space-y-1">
               <Label>Observações</Label>
               <Input {...register(`itens.${index}.observacoes`)} />
             </div>
 
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={() => removeItem(index)}
-            >
-              <Trash2 className="h-4 w-4 text-destructive" />
-            </Button>
+            <div className="col-span-full md:col-span-1 self-start">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => removeItem(index)}
+              >
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
+            </div>
           </div>
         ))}
       </CardContent>

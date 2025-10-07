@@ -1,41 +1,24 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2, Save } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Loader2, Save, Send, AlertCircle } from "lucide-react";
+import { Toast } from "@/components";
+import { supabase } from "@/services/supabaseClient";
 
-import { useDebounce } from "@/hooks/useDebounce";
+import {
+  reservationSchema,
+  ReservationFormValues,
+  genCode,
+} from "@/utils/lib/schemas/reservation-schema";
 import ReservationInfoForm from "./components/reservation-info-form";
 import PassengersForm from "./components/passengers-form";
 import ItemsForm from "./components/items-form";
 import TotalsDisplay from "./components/totals-display";
-
-import { supabase } from "@/services/supabaseClient";
-import { Toast } from "@/components";
-import eventBus from "@/utils/lib/helpers/eventBus";
-import { parseCurrency } from "@/utils/lib/helpers/formatCurrency";
-import {
-  genCode,
-  reservationSchema,
-} from "@/utils/lib/schemas/reservation-schema";
 
 const NovaReserva = () => {
   const router = useRouter();
@@ -43,8 +26,6 @@ const NovaReserva = () => {
   const [operators, setOperators] = useState<any[]>([]);
   const [sellers, setSellers] = useState<any[]>([]);
   const [pricebooks, setPricebooks] = useState<any[]>([]);
-  const [savedReservation, setSavedReservation] = useState<any>(null);
-  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 
   const {
     register,
@@ -53,66 +34,62 @@ const NovaReserva = () => {
     watch,
     setValue,
     formState: { errors },
-  } = useForm({
+  } = useForm<ReservationFormValues>({
     resolver: zodResolver(reservationSchema),
     defaultValues: {
       code: genCode(),
+      contractor_name: "",
+      embark_place: "",
+      date: "",
       entry_value_str: "0,00",
+      entry_value: 0,
+      total_items_net: 0,
+      remaining: 0,
       passengers: [{ name: "", phone: "", is_infant: false }],
       items: [],
     },
   });
 
-  const watchedItems = watch("items");
-  const watchedEntryValue = watch("entry_value_str");
-  const debouncedEntryValue = useDebounce(watchedEntryValue, 300);
   const selectedOperatorId = watch("operator_id");
 
-  useEffect(() => {
-    const fetchOperators = async () => {
-      const { data, error } = await supabase
-        .from("operators")
-        .select("id, name, whatsapp")
-        .eq("active", true)
-        .eq("type", "OPERADORA")
-        .order("name");
+  // 🔹 Buscar Operadoras
+  const fetchOperators = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("operators")
+      .select("id, name")
+      .eq("active", true)
+      .eq("type", "OPERADORA")
+      .order("name");
 
-      if (error) {
-        Toast.Base({
-          variant: "error",
-          title: "Erro ao buscar operadoras!",
-          description: "Ocorreu um erro na busca.",
-        });
-      } else {
-        setOperators(data || []);
-      }
-    };
-    fetchOperators();
+    if (error)
+      return Toast.Base({
+        variant: "error",
+        title: "Erro ao buscar operadoras",
+        description: error.message,
+      });
+
+    setOperators(data || []);
   }, []);
 
-  // Buscar vendedores
-  useEffect(() => {
-    const fetchSellers = async () => {
-      const { data, error } = await supabase
-        .from("sellers") // ajuste para a tabela correta
-        .select("id, name")
-        .eq("active", true)
-        .order("name");
+  // 🔹 Buscar Vendedores
+  const fetchSellers = useCallback(async () => {
+    const { data, error } = await supabase
+      .from("sellers")
+      .select("id, name")
+      .eq("active", true)
+      .order("name");
 
-      if (error) {
-        Toast.Base({
-          variant: "error",
-          title: "Erro ao buscar vendedores!",
-          description: "Ocorreu um erro ao buscar os vendedores.",
-        });
-      } else {
-        setSellers(data || []);
-      }
-    };
-    fetchSellers();
+    if (error)
+      return Toast.Base({
+        variant: "error",
+        title: "Erro ao buscar vendedores",
+        description: error.message,
+      });
+
+    setSellers(data || []);
   }, []);
 
-  // Buscar pricebooks
+  // 🔹 Buscar Pricebooks (itens disponíveis)
   const fetchPricebooks = useCallback(
     async (operatorId?: string) => {
       if (!operatorId) {
@@ -127,180 +104,157 @@ const NovaReserva = () => {
         .eq("partner_id", operatorId)
         .eq("active", true);
 
-      if (error) {
-        Toast.Base({
+      if (error)
+        return Toast.Base({
           variant: "error",
-          title: "Erro ao buscar passeios da operadora!",
-          description: "Ocorreu um erro ao buscar os passeios da operadora.",
+          title: "Erro ao buscar passeios",
+          description: error.message,
         });
-        setPricebooks([]);
-      } else {
-        const formatted = (data || []).map((pb) => ({
-          ...pb,
-          category: pb.name.toLowerCase().includes("transfer")
-            ? "TRANSFER"
-            : "TOUR",
-          pricebook_id: pb.id,
-        }));
-        setPricebooks(formatted);
-      }
+
+      const formatted = (data || []).map((pb) => ({
+        ...pb,
+        category: pb.name.toLowerCase().includes("transfer")
+          ? "TRANSFER"
+          : "TOUR",
+        pricebook_id: pb.id,
+      }));
+
+      setPricebooks(formatted);
     },
     [setValue]
   );
+
+  useEffect(() => {
+    fetchOperators();
+    fetchSellers();
+  }, [fetchOperators, fetchSellers]);
 
   useEffect(() => {
     fetchPricebooks(selectedOperatorId);
     setValue("code", genCode());
   }, [selectedOperatorId, fetchPricebooks, setValue]);
 
-  useEffect(() => {
-    const handlePricebookUpdate = (partnerId: string) => {
-      if (partnerId === selectedOperatorId) {
-        Toast.Base({
-          title: "Lista de passeios atualizada!",
-          variant: "success",
-          description: "Lista atualizada com sucesso.",
-        });
-        fetchPricebooks(partnerId);
+
+  const onSubmit = async (data: ReservationFormValues) => {
+    try {
+      setLoading(true);
+
+      const { data: reservationData, error: reservationError } = await supabase
+        .from("reservations")
+        .insert([
+          {
+            code: data.code,
+            contractor_name: data.contractor_name,
+            embark_place: data.embark_place,
+            date: data.date,
+            entry_value: Math.round(data.entry_value),
+            total_items_net: Math.round(data.total_items_net),
+            remaining: Math.round(data.remaining),
+            operator_id: data.operator_id,
+            seller_id: data.seller_id,
+            notes: null,
+          },
+        ])
+        .select("id")
+        .single();
+
+      if (reservationError) throw reservationError;
+
+      const reservationId = reservationData.id;
+
+      const itemsPayload = data.items.map((item) => ({
+        reservation_id: reservationId,
+        pricebook_id: item.pricebook_id,
+        name: item.name,
+        category: item.category,
+        date: item.date,
+        qty: item.quantity,
+        net: item.net,
+        transfer_multiplier: item.transfer_multiplier,
+        subtotal: item.quantity * item.net!,
+      }));
+
+      if (itemsPayload.length > 0) {
+        const { error: itemsError } = await supabase
+          .from("reservation_items")
+          .insert(itemsPayload);
+
+        if (itemsError) throw itemsError;
       }
-    };
-    eventBus.on("pricebook:updated", handlePricebookUpdate);
-    return () => eventBus.off("pricebook:updated", handlePricebookUpdate);
-  }, [selectedOperatorId, fetchPricebooks]);
 
-  // Totais
-  const totalItensNET = useMemo(
-    () =>
-      watchedItems.reduce(
-        (acc: number, item: any) =>
-          acc + item.net * item.qty * (item.transfer_multiplier || 1),
-        0
-      ),
-    [watchedItems]
-  );
+      const passengersPayload = data.passengers.map((p) => ({
+        reservation_id: reservationId,
+        name: p.name,
+        phone: p.phone,
+        is_infant: p.is_infant,
+      }));
 
-  const entryValueCents = useMemo(
-    () => parseCurrency(debouncedEntryValue ?? "0"),
-    [debouncedEntryValue]
-  );
+      if (passengersPayload.length > 0) {
+        const { error: passengersError } = await supabase
+          .from("passengers")
+          .insert(passengersPayload);
 
-  const valorRestante = useMemo(
-    () => Math.max(totalItensNET - entryValueCents / 100, 0),
-    [totalItensNET, entryValueCents]
-  );
+        if (passengersError) throw passengersError;
+      }
 
-  const onSubmit = async (data: any) => {
-    setLoading(true);
+      Toast.Base({
+        variant: "success",
+        title: "Reserva criada com sucesso!",
+        description: "Todos os dados foram salvos corretamente.",
+      });
 
-    if (totalItensNET <= 0) {
+      router.push("/dashboard/reserve");
+    } catch (error: any) {
       Toast.Base({
         variant: "error",
-        title: "Valor total zerado",
-        description: "A reserva deve ter um valor maior que zero.",
+        title: "Erro ao criar reserva",
+        description: error.message || "Erro desconhecido.",
       });
+    } finally {
       setLoading(false);
-      return;
     }
-
-    // lógica de insert permanece aqui
-    setLoading(false);
   };
 
   return (
-    <>
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className="space-y-8 max-w-6xl mx-auto px-4 pb-10"
-      >
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 sticky top-0 bg-background/80 backdrop-blur z-10 py-4 border-b">
-          <div>
-            <h1 className="text-3xl font-bold">📝 Nova Reserva</h1>
-            <p className="text-muted-foreground text-sm">
-              Preencha os dados para criar uma nova reserva.
-            </p>
-          </div>
-          <Button type="submit" disabled={loading} size="lg">
-            {loading ? (
-              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-            ) : (
-              <Save className="mr-2 h-5 w-5" />
-            )}
-            Salvar Reserva
-          </Button>
-        </div>
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="space-y-6 max-w-6xl mx-auto p-6"
+    >
+      <div className="flex justify-between items-center border-b pb-4">
+        <h1 className="text-2xl font-bold">📝 Nova Reserva</h1>
+        <Button type="submit" disabled={loading}>
+          {loading ? (
+            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+          ) : (
+            <Save className="mr-2 h-5 w-5" />
+          )}
+          Salvar
+        </Button>
+      </div>
 
-        {Object.keys(errors).length > 0 && (
-          <Card className="border-destructive bg-destructive/10">
-            <CardHeader className="flex flex-row items-center gap-4 space-y-0">
-              <AlertCircle className="w-6 h-6 text-destructive" />
-              <div>
-                <CardTitle className="text-destructive">
-                  Campos Incorretos
-                </CardTitle>
-                <CardDescription className="text-destructive/80">
-                  Corrija os campos destacados em vermelho.
-                </CardDescription>
-              </div>
-            </CardHeader>
-          </Card>
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <ReservationInfoForm
-            control={control}
-            register={register}
-            errors={errors}
-            operators={operators}
-            sellers={sellers}
-          />
-
-          <PassengersForm
-            control={control}
-            register={register}
-            errors={errors}
-          />
-        </div>
-
-        <ItemsForm
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <ReservationInfoForm
           control={control}
           register={register}
           errors={errors}
-          pricebooks={pricebooks}
-          selectedOperatorId={selectedOperatorId}
-          watch={watch}
-          setValue={setValue}
+          operators={operators}
+          sellers={sellers}
         />
+        <PassengersForm control={control} register={register} errors={errors} />
+      </div>
 
-        <TotalsDisplay
-          register={register}
-          totalItensNET={totalItensNET}
-          valorRestante={valorRestante}
-        />
-      </form>
+      <ItemsForm
+        control={control}
+        register={register}
+        errors={errors}
+        pricebooks={pricebooks}
+        selectedOperatorId={selectedOperatorId}
+        watch={watch}
+        setValue={setValue}
+      />
 
-      <Dialog open={isSuccessModalOpen} onOpenChange={setIsSuccessModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>🎉 Reserva criada com sucesso!</DialogTitle>
-            <DialogDescription>
-              A reserva <strong>{savedReservation?.code}</strong> foi
-              registrada. Deseja enviar para a operadora via WhatsApp?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:justify-between">
-            <Button
-              variant="outline"
-              onClick={() => router.push("/reservas/lista")}
-            >
-              Voltar para Reservas
-            </Button>
-            <Button onClick={() => {}}>
-              <Send className="mr-2 h-4 w-4" /> Enviar via WhatsApp
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+      <TotalsDisplay control={control} setValue={setValue} />
+    </form>
   );
 };
 

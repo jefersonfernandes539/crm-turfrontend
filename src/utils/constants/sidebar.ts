@@ -17,6 +17,9 @@ const RESERVE_PREFIX = `${DASHBOARD_PREFIX}/reserve`;
 const SELLERS_PREFIX = `${DASHBOARD_PREFIX}/sellers`;
 const VOUCHERS_PREFIX = `${DASHBOARD_PREFIX}/voucher`;
 const SALES_HOME_PREFIX = `${DASHBOARD_PREFIX}/sales/home`;
+const SALES_RANKING_PREFIX = `${DASHBOARD_PREFIX}/sales/ranking`;
+const SALES_REPORTS_PREFIX = `${DASHBOARD_PREFIX}/sales/reports`;
+const SALES_NEWSALE_PREFIX = `${DASHBOARD_PREFIX}/sales/new-sale`;
 
 export const sidebarData = {
   navMain: [
@@ -74,17 +77,17 @@ export const sidebarData = {
         {
           title: "Ranking",
           icon: ListStart,
-          url: RESERVE_PREFIX,
+          url: SALES_RANKING_PREFIX,
         },
         {
           title: "Relatórios",
           icon: ClipboardMinus,
-          url: PARTNERS_PREFIX,
+          url: SALES_REPORTS_PREFIX,
         },
         {
           title: "Nova Venda",
           icon: HandCoins,
-          url: SELLERS_PREFIX,
+          url: SALES_NEWSALE_PREFIX,
         },
       ],
     },

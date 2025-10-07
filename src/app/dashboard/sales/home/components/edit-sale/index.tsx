@@ -34,7 +34,7 @@ const EditSaleDialog: React.FC<EditSaleDialogProps> = ({
   onDelete,
   sellerOptions,
 }) => {
-  const { control, handleSubmit, reset, register, setValue } = useForm({
+  const { control, handleSubmit, reset, register } = useForm({
     defaultValues: {
       client_name: sale?.client_name || "",
       pix_value: sale?.pix_value || 0,

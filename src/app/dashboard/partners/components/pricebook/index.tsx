@@ -241,7 +241,7 @@ const Pricebook: React.FC<PricebookProps> = ({ partnerId }) => {
                   pricebook.map((item) => (
                     <TableRow key={item.id}>
                       <TableCell>{item.name}</TableCell>
-                      <TableCell>{formatCurrency(item.net * 100)}</TableCell>
+                      <TableCell>{formatCurrency(item.net)}</TableCell>
                       <TableCell className="text-right">
                         <Button
                           variant="ghost"
@@ -273,7 +273,6 @@ const Pricebook: React.FC<PricebookProps> = ({ partnerId }) => {
         </CardContent>
       </Card>
 
-      {/* Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent>
           <DialogHeader>

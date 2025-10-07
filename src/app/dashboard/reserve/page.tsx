@@ -30,23 +30,23 @@ export default function ReservePage() {
   };
 
   return (
-    <div className="container mx-auto py-8">
-      <div className="space-y-6">
-        <ReservationsHeader />
-        <ReservationsSearch value={searchTerm} onChange={setSearchTerm} />
-        <ReservationsTable
-          reservations={reservations}
-          loading={loading}
-          onRowClick={handleRowClick}
-        />
-      </div>
-
-      <ReservationDetailsDialog
-        reservationId={selectedReservationId}
-        open={isDetailsOpen}
-        onOpenChange={handleCloseDetails}
-        onDelete={deleteReservation}
+    <div className="container mx-auto py-8 space-y-6">
+      <ReservationsHeader />
+      <ReservationsSearch value={searchTerm} onChange={setSearchTerm} />
+      <ReservationsTable
+        reservations={reservations}
+        loading={loading}
+        onRowClick={handleRowClick}
       />
+
+      {selectedReservationId && (
+        <ReservationDetailsDialog
+          reservationId={selectedReservationId}
+          open={isDetailsOpen}
+          onOpenChange={handleCloseDetails}
+          onDelete={deleteReservation}
+        />
+      )}
     </div>
   );
 }

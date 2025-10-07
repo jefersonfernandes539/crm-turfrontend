@@ -183,7 +183,7 @@ export function VoucherForm({ initialData, voucherId }: VoucherFormProps) {
         variant: "success",
       });
       await gerarVoucherPDF(voucherPayload);
-      router.push("/voucher");
+      router.push("/dashboard/voucher");
     } catch (error: any) {
       console.error("Erro no processo de salvar e gerar voucher:", error);
 

@@ -1,6 +1,6 @@
 import SellersList from "./components/sellers-list";
 
-export default function Sellers() {
+export default function SellersPage() {
   return (
     <>
       <div className="py-8">

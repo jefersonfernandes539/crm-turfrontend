@@ -16,8 +16,8 @@ export type VoucherFormData = {
   contratante: string;
   telefone?: string;
   embarque?: string;
-  operadora?: string; // operador.id
-  vendedor?: string; // seller.name
+  operadora?: string; 
+  vendedor?: string; 
   itens: VoucherItem[];
   passageiros: VoucherPassenger[];
   total?: number;

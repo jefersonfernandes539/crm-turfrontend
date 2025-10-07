@@ -64,7 +64,7 @@ export default function LoginForm() {
   }
 
   return (
-    <Card className="mx-auto max-w-sm flex flex-row gap-0 py-0">
+    <Card className="mx-auto max-w-sm flex flex-row gap-0 py-0 border-none">
       <div className="sm:block hidden relative w-1/2 rounded-l-xl overflow-hidden">
         <Image
           src="/blue.webp"

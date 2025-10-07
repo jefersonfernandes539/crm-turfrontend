@@ -53,7 +53,7 @@ interface ReservationItem {
 
 interface Reservation {
   id: string;
-  reservation_items: ReservationItem[];
+  reservation_items?: ReservationItem[];
 }
 
 const ReportsPage = () => {
@@ -66,65 +66,51 @@ const ReportsPage = () => {
     topTours: [] as [string, number][],
   });
 
-  // Buscar lista de parceiros
   const fetchOperators = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("operators")
-      .select("id, name")
-      .order("name");
+    try {
+      const { data, error } = await supabase
+        .from("operators")
+        .select("id, name")
+        .order("name");
 
-    if (error) {
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        setOperators(data);
+        setSelectedOperator(data[0].id);
+      }
+    } catch (err: any) {
       Toast.Base({
         variant: "error",
         title: "Erro ao buscar operadoras.",
-        description: error.message,
+        description: err.message || "Erro desconhecido",
       });
-    } else if (data) {
-      setOperators(data);
-      if (data.length > 0) {
-        setSelectedOperator(data[0].id);
-      }
     }
   }, []);
 
   const fetchReportData = useCallback(async (operatorId: string) => {
-    if (!operatorId) {
-      setReportData({
-        totalReservations: 0,
-        totalNetValue: 0,
-        topTours: [],
-      });
-      setLoading(false);
-      return;
-    }
+    if (!operatorId) return;
 
     setLoading(true);
+    try {
+      const { data: reservationsData, error } = await supabase
+        .from("reservations")
+        .select("id, reservation_items(subtotal, name)")
+        .eq("operator_id", operatorId);
 
-    const { data: reservationsData, error: reservationsError } = await supabase
-      .from("reservations")
-      .select("id, reservation_items(subtotal, name)")
-      .eq("operator_id", operatorId);
+      if (error) throw error;
 
-    if (reservationsError) {
-      Toast.Base({
-        variant: "error",
-        title: "Erro ao buscar relatório.",
-        description: reservationsError.message,
-      });
-      setReportData({
-        totalReservations: 0,
-        totalNetValue: 0,
-        topTours: [],
-      });
-    } else if (reservationsData) {
-      const totalReservations = reservationsData.length;
+      const reservations = reservationsData || [];
+      const totalReservations = reservations.length;
       let totalNetValue = 0;
       const tourCounts: Record<string, number> = {};
 
-      (reservationsData as Reservation[]).forEach((reservation) => {
-        reservation.reservation_items.forEach((item) => {
-          totalNetValue += item.subtotal;
-          tourCounts[item.name] = (tourCounts[item.name] || 0) + 1;
+      reservations.forEach((reservation: Reservation) => {
+        reservation.reservation_items?.forEach((item) => {
+          totalNetValue += item.subtotal || 0;
+          if (item.name) {
+            tourCounts[item.name] = (tourCounts[item.name] || 0) + 1;
+          }
         });
       });
 
@@ -137,9 +123,16 @@ const ReportsPage = () => {
         totalNetValue,
         topTours: sortedTours,
       });
+    } catch (err: any) {
+      Toast.Base({
+        variant: "error",
+        title: "Erro ao buscar relatório.",
+        description: err.message || "Erro desconhecido",
+      });
+      setReportData({ totalReservations: 0, totalNetValue: 0, topTours: [] });
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -149,14 +142,12 @@ const ReportsPage = () => {
   useEffect(() => {
     if (selectedOperator) {
       fetchReportData(selectedOperator);
-    } else {
-      setLoading(false);
     }
   }, [selectedOperator, fetchReportData]);
 
   const chartData = {
-    labels: reportData.topTours.map(
-      ([name]) => name.substring(0, 20) + (name.length > 20 ? "..." : "")
+    labels: reportData.topTours.map(([name]) =>
+      name.length > 20 ? name.substring(0, 20) + "..." : name
     ),
     datasets: [
       {
@@ -173,13 +164,8 @@ const ReportsPage = () => {
     indexAxis: "y" as const,
     responsive: true,
     plugins: {
-      legend: {
-        display: false,
-      },
-      title: {
-        display: true,
-        text: "Top 10 Passeios Mais Vendidos",
-      },
+      legend: { display: false },
+      title: { display: true, text: "Top 10 Passeios Mais Vendidos" },
     },
   };
 

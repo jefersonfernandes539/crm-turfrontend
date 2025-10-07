@@ -11,12 +11,31 @@ type AuthState = {
   onLogin: (data: { email: string; password: string }) => Promise<void>;
   onRegister: (data: { email: string; password: string }) => Promise<void>;
   onLogout: () => Promise<void>;
+  initAuth: () => Promise<void>;
 };
 
 export const useAuth = create<AuthState>((set) => ({
   user: null,
   session: null,
-  loading: false,
+  loading: true, // começa em loading
+
+  // inicializa pegando sessão atual + listener
+  initAuth: async () => {
+    const { data } = await supabase.auth.getSession();
+    set({
+      user: data.session?.user ?? null,
+      session: data.session,
+      loading: false,
+    });
+
+    supabase.auth.onAuthStateChange((_event, session) => {
+      set({
+        user: session?.user ?? null,
+        session,
+        loading: false,
+      });
+    });
+  },
 
   onLogin: async ({ email, password }) => {
     set({ loading: true });
@@ -49,7 +68,6 @@ export const useAuth = create<AuthState>((set) => ({
       throw error;
     }
 
-    // o usuário precisa confirmar o e-mail (dependendo da config do Supabase)
     set({
       user: data.user,
       session: data.session,

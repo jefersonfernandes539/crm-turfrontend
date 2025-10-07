@@ -1,126 +1,179 @@
 "use client";
-import React from "react";
-import { Controller, useFieldArray } from "react-hook-form";
+
+import React, { useEffect } from "react";
+import {
+  Control,
+  UseFormRegister,
+  useFieldArray,
+  UseFormWatch,
+  UseFormSetValue,
+  FieldErrors,
+} from "react-hook-form";
+import { Plus, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { ReservationFormValues } from "@/utils/lib/schemas/reservation-schema";
 import {
   Select,
-  SelectTrigger,
-  SelectValue,
   SelectContent,
   SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2 } from "lucide-react";
 
-interface Props {
-  control: any;
-  register: any;
-  errors: any;
-  pricebooks: {
-    id: string;
-    name: string;
-    net: number;
-    pricebook_id: string;
-    category: string;
-  }[];
+interface ItemsFormProps {
+  control: Control<ReservationFormValues>;
+  register: UseFormRegister<ReservationFormValues>;
+  watch: UseFormWatch<ReservationFormValues>;
+  setValue: UseFormSetValue<ReservationFormValues>;
+  errors: FieldErrors<ReservationFormValues>;
+  pricebooks: { id: string; name: string; net: number; category: string }[];
   selectedOperatorId?: string;
-  watch: any;
-  setValue: any;
 }
 
-const ItemsForm: React.FC<Props> = ({
+const ItemsForm: React.FC<ItemsFormProps> = ({
   control,
   register,
-  pricebooks,
-  selectedOperatorId,
   watch,
   setValue,
+  errors,
+  pricebooks,
 }) => {
   const { fields, append, remove } = useFieldArray({
     control,
     name: "items",
   });
 
+  const items = watch("items");
+
+  useEffect(() => {
+    let total = 0;
+
+    items.forEach((item, i) => {
+      const subtotal = item.net * item.quantity;
+      setValue(`items.${i}.subtotal`, subtotal);
+      total += subtotal;
+    });
+
+    setValue("total_items_net", total);
+    setValue("remaining", total - watch("entry_value"));
+  }, [items, setValue, watch]);
+
+  const handleAddItem = () => {
+    append({
+      pricebook_id: "",
+      name: "",
+      category: "",
+      date: "",
+      quantity: 1,
+      net: 0,
+      transfer_multiplier: 1,
+      subtotal: 0,
+    });
+  };
+
+  const handleSelectPricebook = (index: number, pricebookId: string) => {
+    const selected = pricebooks.find((p) => p.id === pricebookId);
+    if (!selected) return;
+    setValue(`items.${index}.pricebook_id`, selected.id);
+    setValue(`items.${index}.name`, selected.name);
+    setValue(`items.${index}.category`, selected.category);
+    setValue(`items.${index}.net`, selected.net);
+  };
+
   return (
-    <Card>
+    <Card className="mt-6">
       <CardHeader>
-        <CardTitle>🎯 Passeios / Itens</CardTitle>
+        <CardTitle className="text-lg">Itens da Reserva</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {fields.map((field, index) => (
           <div
             key={field.id}
-            className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end"
+            className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end border-b pb-4"
           >
-            <div className="space-y-1 md:col-span-2">
-              <Label>Passeio</Label>
-              <Controller
-                name={`items.${index}.pricebook_id`}
-                control={control}
-                render={({ field }) => (
-                  <Select
-                    onValueChange={(val) => {
-                      const pb = pricebooks.find((p) => p.id === val);
-                      setValue(`items.${index}.name`, pb?.name || "");
-                      setValue(`items.${index}.net`, pb?.net || 0);
-                      setValue(`items.${index}.category`, pb?.category || "");
-                      field.onChange(val);
-                    }}
-                    value={field.value}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um passeio" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {pricebooks.map((pb) => (
-                        <SelectItem key={pb.id} value={pb.id}>
-                          {pb.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
+            <div className="md:col-span-2">
+              <Label>Item</Label>
+              <Select
+                onValueChange={(value) => handleSelectPricebook(index, value)}
+                value={items[index]?.pricebook_id || ""}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o item" />
+                </SelectTrigger>
+                <SelectContent>
+                  {pricebooks.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.items?.[index]?.name && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.items[index]?.name?.message as string}
+                </p>
+              )}
             </div>
 
-            <div className="space-y-1">
-              <Label>Qtd</Label>
-              <Input
-                type="number"
-                {...register(`items.${index}.qty`, { valueAsNumber: true })}
-              />
-            </div>
-
-            <div className="space-y-1">
+            <div>
               <Label>Data</Label>
               <Input type="date" {...register(`items.${index}.date`)} />
             </div>
 
-            <Button
-              type="button"
-              variant="destructive"
-              size="icon"
-              onClick={() => remove(index)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            <div>
+              <Label>Qtd</Label>
+              <Input
+                type="number"
+                min={1}
+                {...register(`items.${index}.quantity`, {
+                  valueAsNumber: true,
+                })}
+              />
+            </div>
+
+            <div>
+              <Label>Net</Label>
+              <Input
+                type="number"
+                step="0.01"
+                {...register(`items.${index}.net`, { valueAsNumber: true })}
+              />
+            </div>
+
+            <div>
+              <Label>Subtotal</Label>
+              <Input
+                type="number"
+                value={items[index]?.subtotal || 0}
+                readOnly
+                className="bg-gray-100"
+              />
+            </div>
+
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                variant="destructive"
+                size="icon"
+                onClick={() => remove(index)}
+              >
+                <Trash2 size={18} />
+              </Button>
+            </div>
           </div>
         ))}
 
-        {selectedOperatorId ? (
-          <Button
-            type="button"
-            onClick={() => append({ name: "", qty: 1, net: 0, category: "" })}
-          >
-            <Plus className="mr-2 h-4 w-4" /> Adicionar Item
-          </Button>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            Selecione uma operadora para listar os passeios.
-          </p>
-        )}
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={handleAddItem}
+          className="mt-4"
+        >
+          <Plus className="mr-2 h-4 w-4" /> Adicionar Item
+        </Button>
       </CardContent>
     </Card>
   );

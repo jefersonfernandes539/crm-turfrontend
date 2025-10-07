@@ -38,6 +38,20 @@ export function formatCurrency(
   }
 }
 
+export const formatCurrencyInput = (value: string) => {
+  const numericValue = value.replace(/\D/g, "");
+  const floatValue = (parseInt(numericValue || "0", 10) / 100).toFixed(2);
+  return `R$ ${floatValue.replace(".", ",")}`;
+};
+
+export const formatBRL = (value: number) => {
+  return value.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 2,
+  });
+};
+
 /**
  * Formata um número como porcentagem
  * @param value - Valor numérico (ex: 0.15 para 15%)
@@ -123,3 +137,30 @@ export function parseCurrency(value: string): number {
   const parsed = parseFloat(cleaned);
   return isNaN(parsed) ? 0 : parsed;
 }
+export const formatCurrencyBRL = (value: string | number): string => {
+  const numericValue = String(value).replace(/\D/g, "");
+  const cents = parseInt(numericValue || "0", 10);
+  return (cents / 100).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 2,
+  });
+};
+
+
+export const formatCurrencyBRLT = (value: string | number): string => {
+  const numericValue =
+    typeof value === "number" ? value : parseFloat(value.replace(",", "."));
+  if (isNaN(numericValue)) return "R$ 0,00";
+
+  return numericValue.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    minimumFractionDigits: 2,
+  });
+};
+
+export const parseCurrencyBRL = (value: string): number => {
+  const numericValue = value.replace(/\D/g, "");
+  return parseInt(numericValue || "0", 10); // retorna centavos
+};
