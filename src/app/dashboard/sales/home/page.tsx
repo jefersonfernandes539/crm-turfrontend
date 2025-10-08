@@ -93,7 +93,6 @@ const SalesHome: React.FC = () => {
 
   const fetchSales = useCallback(async () => {
     setLoading(true);
-    console.log("Buscando vendas do Supabase...");
 
     const { data, error } = await supabase
       .from("spreadsheet_sales")
@@ -107,9 +106,7 @@ const SalesHome: React.FC = () => {
       });
       setAllSales([]);
     } else {
-      console.log("Vendas recebidas do Supabase:", data);
       const mappedData = data.map((s) => ({ ...s, seller_name: s.vendedor }));
-      console.log("📦 Vendas após mapear seller_name:", mappedData);
       setAllSales(mappedData || []);
     }
 
