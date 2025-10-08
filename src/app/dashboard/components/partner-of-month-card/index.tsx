@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import {
   Card,
   CardContent,
@@ -11,7 +10,6 @@ import {
 import { Crown } from "lucide-react";
 import type { PartnerCardProps } from "@/types/Dashboard";
 import { formatCurrency } from "@/utils/lib/helpers/formatCurrency";
-import { useState } from "react";
 
 export const PartnerOfTheMonthCard = ({
   partner,
@@ -19,9 +17,6 @@ export const PartnerOfTheMonthCard = ({
   onClick,
 }: PartnerCardProps) => {
   const hasValidPartner = partner?.name && partner.name !== "—";
-  const [imageError, setImageError] = useState(false);
-
-  const showImage = partner?.photo_url && !imageError;
 
   return (
     <Card
@@ -44,7 +39,6 @@ export const PartnerOfTheMonthCard = ({
 
       <CardContent>
         {loading ? (
-          // Loading skeleton
           <div className="flex items-center space-x-4">
             <div className="h-16 w-16 bg-btj-muted/20 rounded-lg animate-pulse flex-shrink-0" />
             <div className="space-y-2 flex-1">
@@ -53,9 +47,8 @@ export const PartnerOfTheMonthCard = ({
             </div>
           </div>
         ) : hasValidPartner ? (
-          // Conteúdo com parceiro
           <div className="flex items-center space-x-4">
-            {showImage && (
+            {/* {showImage && (
               <div className="flex-shrink-0 relative h-16 w-16">
                 <Image
                   src={partner.photo_url!}
@@ -66,7 +59,7 @@ export const PartnerOfTheMonthCard = ({
                   onError={() => setImageError(true)}
                 />
               </div>
-            )}
+            )} */}
             <div className="flex-1 min-w-0">
               <p
                 className="text-lg font-bold text-btj-text truncate"
@@ -80,7 +73,6 @@ export const PartnerOfTheMonthCard = ({
             </div>
           </div>
         ) : (
-          // Caso sem parceiro válido
           <div className="text-center text-btj-muted py-8">
             <Crown className="h-8 w-8 mx-auto mb-2 opacity-50" />
             <p>Nenhum parceiro encontrado no período.</p>
