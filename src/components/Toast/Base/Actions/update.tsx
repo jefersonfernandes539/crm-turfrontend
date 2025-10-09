@@ -1,11 +1,10 @@
 "use client";
 
+import { toast } from "sonner";
 import { cn } from "@/utils/lib/utils";
 import { cva } from "class-variance-authority";
 import { X } from "lucide-react";
 import React from "react";
-import { toast, ToasterProps } from "sonner";
-import ButtonAction from "./Actions";
 
 type ToastVariant =
   | "default"
@@ -14,16 +13,11 @@ type ToastVariant =
   | "warning"
   | "loading";
 
-interface CustomToastProps {
+interface ToastUpdateProps {
+  id: string | number;
   title?: string;
   description: string;
   duration?: number;
-  position?: ToasterProps["position"];
-  closeButton?: boolean;
-  action?: {
-    label: string;
-    onClick: () => void;
-  };
   variant?: ToastVariant;
 }
 
@@ -45,17 +39,15 @@ const toastVariants = cva(
   }
 );
 
-export const Base = ({
+export const Update = ({
+  id,
   title,
   description,
   duration = 3000,
-  position = "top-right",
-  closeButton = true,
-  action,
   variant = "default",
-}: CustomToastProps): string | number => {
-  const id = toast.custom(
-    (tId: string | number) => (
+}: ToastUpdateProps) => {
+  toast.custom(
+    () => (
       <div
         className={cn(
           toastVariants({ variant }),
@@ -69,35 +61,14 @@ export const Base = ({
           <div className="opacity-90 text-sm">{description}</div>
         </div>
 
-        {action && (
-          <div className="ml-4">
-            <ButtonAction
-              onClick={() => {
-                action.onClick();
-                toast.dismiss(tId);
-              }}
-              variant={variant}
-            >
-              {action.label}
-            </ButtonAction>
-          </div>
-        )}
-
-        {closeButton && (
-          <button
-            onClick={() => toast.dismiss(tId)}
-            className="absolute right-1 top-1 rounded-md p-1 text-foreground/50 opacity-0 transition-opacity hover:text-foreground focus:opacity-100 focus:outline-none focus:ring-1 group-hover:opacity-100"
-          >
-            <X size={16} />
-          </button>
-        )}
+        <button
+          onClick={() => toast.dismiss(id)}
+          className="absolute right-1 top-1 rounded-md p-1 text-foreground/50 opacity-0 transition-opacity hover:text-foreground focus:opacity-100 focus:outline-none focus:ring-1 group-hover:opacity-100"
+        >
+          <X size={16} />
+        </button>
       </div>
     ),
-    {
-      duration,
-      position,
-    }
+    { id, duration }
   );
-
-  return id;
 };

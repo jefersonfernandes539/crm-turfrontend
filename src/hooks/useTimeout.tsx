@@ -22,9 +22,12 @@ const useTimeout = ({ callback, delay }: TimeoutProps): TimeoutReturnProps => {
     timeoutRef.current = setTimeout(() => callbackRef.current(), delay);
   }, [delay]);
 
-  const clear = useCallback(() => {
-    timeoutRef.current && clearTimeout(timeoutRef.current);
-  }, []);
+const clear = useCallback(() => {
+  if (timeoutRef.current) {
+    clearTimeout(timeoutRef.current);
+  }
+}, []);
+
 
   useEffect(() => {
     set();

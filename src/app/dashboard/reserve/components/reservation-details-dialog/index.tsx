@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Pencil, Trash2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 
 import { supabase } from "@/services/supabaseClient";
 import { Toast } from "@/components";
@@ -32,19 +32,13 @@ export function ReservationDetailsDialog({
   onOpenChange,
   onDelete,
 }: ReservationDetailsDialogProps) {
-  const [reservation, setReservation] = useState<ReservationFormValues | null>(
-    null
-  );
+    const [reservation, setReservation] = useState<ReservationFormValues | null>(null);
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  useEffect(() => {
-    if (open && reservationId) fetchReservationDetails();
-  }, [open, reservationId]);
-
-  const fetchReservationDetails = async () => {
+  const fetchReservationDetails = useCallback(async () => {
     if (!reservationId) return;
     setLoading(true);
 
@@ -109,7 +103,12 @@ export function ReservationDetailsDialog({
     } finally {
       setLoading(false);
     }
-  };
+  }, [reservationId]);
+
+  // ✅ Agora o useEffect pode usar a função sem erro
+  useEffect(() => {
+    if (open && reservationId) fetchReservationDetails();
+  }, [open, reservationId, fetchReservationDetails]);
 
   const handleDelete = async () => {
     if (!reservationId) return;
@@ -122,7 +121,6 @@ export function ReservationDetailsDialog({
   const handleSaveEdit = async (updatedData: ReservationFormValues) => {
     try {
       setIsSaving(true);
-
       await supabase
         .from("reservations")
         .update({
@@ -172,7 +170,6 @@ export function ReservationDetailsDialog({
             </div>
           ) : reservation ? (
             <div className="space-y-6">
-              {/* Informações Gerais */}
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="text-muted-foreground">Código</p>
@@ -190,7 +187,6 @@ export function ReservationDetailsDialog({
 
               <Separator />
 
-              {/* Passageiros */}
               <div>
                 <h3 className="font-semibold mb-3">Passageiros</h3>
                 {reservation.passengers.length > 0 ? (
@@ -223,7 +219,7 @@ export function ReservationDetailsDialog({
 
               <Separator />
 
-              {/* Itens */}
+              
               <div>
                 <h3 className="font-semibold mb-3">Itens da Reserva</h3>
                 {reservation.items.length > 0 ? (

@@ -1,11 +1,6 @@
 import { cn } from "@/utils/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
-
-type ButtonActionProps = {
-  children: React.ReactNode;
-  onClick: () => void;
-  className?: string;
-} & VariantProps<typeof buttonVariants>;
+import React from "react";
 
 const buttonVariants = cva(
   "inline-flex h-8 items-center justify-center rounded-md px-3 mt-2 text-sm font-medium transition-colors focus:outline-none focus:ring-1 disabled:pointer-events-none disabled:opacity-50",
@@ -20,6 +15,8 @@ const buttonVariants = cva(
           "border border-yellow-50 bg-yellow-500 text-white shadow-sm hover:bg-yellow-600",
         error:
           "border border-red-100 bg-red-500 dark:bg-destructive text-white shadow-sm hover:bg-red-600",
+        loading:
+          "border border-blue-200 bg-blue-500 text-white shadow-sm hover:bg-blue-600",
       },
     },
     defaultVariants: {
@@ -27,6 +24,12 @@ const buttonVariants = cva(
     },
   }
 );
+
+type ButtonActionProps = {
+  children: React.ReactNode;
+  onClick: () => void;
+  className?: string;
+} & VariantProps<typeof buttonVariants>;
 
 const ButtonAction: React.FC<ButtonActionProps> = ({
   children,
@@ -44,4 +47,5 @@ const ButtonAction: React.FC<ButtonActionProps> = ({
   );
 };
 
+export { ButtonAction };
 export default ButtonAction;

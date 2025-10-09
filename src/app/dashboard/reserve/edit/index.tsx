@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -45,31 +45,28 @@ export function EditVoucherDialog({
     useState<ReservationFormValues>(reservationData);
   const [sellerOptions, setSellerOptions] = useState<string[]>([]);
   const [loadingSellers, setLoadingSellers] = useState(false);
-  const [descriptionOptions, setDescriptionOptions] = useState<ItemOption[]>(
-    []
-  );
+  const [descriptionOptions, setDescriptionOptions] = useState<ItemOption[]>([]);
+
+  const loadDescriptionOptions = useCallback(() => {
+    const options: ItemOption[] = formData.items.map((i, idx) => ({
+      id: i.id ?? `item-${idx}`,
+      name: i.name,
+    }));
+    setDescriptionOptions(options);
+  }, [formData.items]);
+
+  const fetchSellers = useCallback(async () => {
+    setLoadingSellers(true);
+    const sellers = await getSellerOptions();
+    setSellerOptions(sellers);
+    setLoadingSellers(false);
+  }, []);
 
   useEffect(() => {
     setFormData(reservationData);
     fetchSellers();
     loadDescriptionOptions();
-  }, [reservationData]);
-
-  const fetchSellers = async () => {
-    setLoadingSellers(true);
-    const sellers = await getSellerOptions();
-    setSellerOptions(sellers);
-    setLoadingSellers(false);
-  };
-
-  // Popula as opções de descrição a partir dos itens da reserva
-  const loadDescriptionOptions = () => {
-    const options: ItemOption[] = formData.items.map((i, idx) => ({
-      id: i.id ?? `item-${idx}`, // usa idx se i.id for undefined
-      name: i.name,
-    }));
-    setDescriptionOptions(options);
-  };
+  }, [reservationData, fetchSellers, loadDescriptionOptions]);
 
   const handleChange = (field: keyof ReservationFormValues, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -107,7 +104,7 @@ export function EditVoucherDialog({
         </DialogHeader>
 
         <div className="space-y-6 mt-4 max-h-[80vh] overflow-y-auto pr-2">
-          {/* Dados básicos */}
+          
           <div className="grid grid-cols-2 gap-6">
             <div className="flex flex-col">
               <Label>Vendedor</Label>
@@ -189,7 +186,6 @@ export function EditVoucherDialog({
 
           <Separator />
 
-          {/* Passageiros */}
           <div>
             <h3 className="font-semibold mb-2">Passageiros</h3>
             {formData.passengers.map((p, idx) => (
@@ -229,8 +225,7 @@ export function EditVoucherDialog({
           </div>
 
           <Separator />
-
-          {/* Itens */}
+          
           <div>
             <h3 className="font-semibold mb-2">Itens</h3>
             {formData.items.map((item, idx) => (

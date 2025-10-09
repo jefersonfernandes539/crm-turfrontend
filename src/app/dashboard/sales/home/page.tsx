@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -32,7 +32,6 @@ import { formatCurrency, formatDate } from "@/utils/lib/helpers/formatCurrency";
 import { inPer, rank } from "@/utils/lib/xlsx-utils";
 import { getSellerOptions } from "@/utils/lib/sellers";
 import EditSaleDialog from "./components/edit-sale";
-import { Toast } from "@/components";
 import * as XLSX from "xlsx";
 import {
   AlertDialog,
@@ -45,6 +44,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
+import { Toast } from "@/components";
 
 const SalesHome: React.FC = () => {
   const [allSales, setAllSales] = useState<any[]>([]);
@@ -62,6 +62,8 @@ const SalesHome: React.FC = () => {
   const [sellerOptions, setSellerOptions] = useState<string[]>([]);
   const [sellerMap, setSellerMap] = useState<{ [key: string]: string }>({});
 
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
   const months = useMemo(
     () =>
       Array.from({ length: 12 }, (_, i) => ({
@@ -70,6 +72,7 @@ const SalesHome: React.FC = () => {
       })),
     []
   );
+
   const years = useMemo(
     () => Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i),
     []
@@ -82,6 +85,7 @@ const SalesHome: React.FC = () => {
     const { data, error } = await supabase
       .from("sellers")
       .select("id, name, photo_url");
+
     if (!error && data) {
       const map = data.reduce((acc, s) => {
         acc[s.name] = s.photo_url || "";
@@ -93,10 +97,7 @@ const SalesHome: React.FC = () => {
 
   const fetchSales = useCallback(async () => {
     setLoading(true);
-
-    const { data, error } = await supabase
-      .from("spreadsheet_sales")
-      .select("*");
+    const { data, error } = await supabase.from("spreadsheet_sales").select("*");
 
     if (error) {
       Toast.Base({
@@ -141,6 +142,7 @@ const SalesHome: React.FC = () => {
     const currentFilteredSales = allSales.filter((sale) =>
       inPer(sale.data, currentMonth, currentYear)
     );
+
     const totalPix = currentFilteredSales.reduce(
       (acc, sale) => acc + (Number(sale.pix) || 0),
       0
@@ -153,6 +155,7 @@ const SalesHome: React.FC = () => {
         comissao: s.comissao,
       }))
     ).sort((a, b) => b.total - a.total);
+
     const topSeller = ranking.length > 0 ? ranking[0].vendedor : "N/A";
 
     setStats({ totalPix, salesCount, topSeller });
@@ -170,19 +173,21 @@ const SalesHome: React.FC = () => {
       .from("spreadsheet_sales")
       .update(saleToUpdate)
       .eq("id", id);
-    if (error)
+
+    if (error) {
       Toast.Base({
         variant: "error",
         title: "Erro ao salvar venda",
         description: error.message,
       });
-    else
+    } else {
       Toast.Base({
         variant: "success",
         title: "Venda atualizada!",
         description: "",
       });
-    fetchSales();
+      fetchSales();
+    }
   };
 
   const handleDeleteSale = async (saleToDelete: any) => {
@@ -190,23 +195,35 @@ const SalesHome: React.FC = () => {
       .from("spreadsheet_sales")
       .delete()
       .eq("id", saleToDelete.id);
-    if (error)
+
+    if (error) {
       Toast.Base({
         variant: "error",
         title: "Erro ao excluir venda",
         description: error.message,
       });
-    else
+    } else {
       Toast.Base({
         variant: "success",
         title: "Venda excluída!",
         description: "",
       });
-    fetchSales();
+      fetchSales();
+    }
   };
 
+  // ✅ Upload com Toast.Base + Toast.Update
   const handleUpload = async (file: File) => {
+    let toastId: string | number;
+
     try {
+      toastId = Toast.Base({
+        variant: "loading",
+        title: "Importando planilha...",
+        description: "Aguarde enquanto processamos os dados.",
+        duration: 999999,
+      });
+
       const data = await file.arrayBuffer();
       const workbook = XLSX.read(data);
       const sheet =
@@ -217,16 +234,20 @@ const SalesHome: React.FC = () => {
       const { error } = await supabase.from("spreadsheet_sales").insert(parsed);
       if (error) throw error;
 
-      Toast.Base({
+      Toast.Update({
+        id: toastId,
         variant: "success",
-        title: `${parsed.length} vendas importadas!`,
-        description: "",
+        title: "Importação concluída!",
+        description: `${parsed.length} vendas importadas com sucesso.`,
+        duration: 4000,
       });
+
       fetchSales();
     } catch (err: any) {
-      Toast.Base({
+      Toast.Update({
+        id: toastId!,
         variant: "error",
-        title: "Erro ao importar",
+        title: "Erro ao importar planilha",
         description: err.message,
       });
     }
@@ -244,7 +265,7 @@ const SalesHome: React.FC = () => {
     } catch (err: any) {
       Toast.Base({
         variant: "error",
-        title: "Erro ao limpar",
+        title: "Erro ao limpar vendas",
         description: err.message,
       });
     }
@@ -257,12 +278,14 @@ const SalesHome: React.FC = () => {
       transition={{ duration: 0.5 }}
       className="space-y-6"
     >
+      {/* Cabeçalho */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-3xl font-bold tracking-tight hologram-text">
           Dashboard de Vendas
         </h1>
 
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Seleção de mês */}
           <Select
             value={currentMonth.toString()}
             onValueChange={(val) => setCurrentMonth(Number(val))}
@@ -279,6 +302,7 @@ const SalesHome: React.FC = () => {
             </SelectContent>
           </Select>
 
+          {/* Seleção de ano */}
           <Select
             value={currentYear.toString()}
             onValueChange={(val) => setCurrentYear(Number(val))}
@@ -295,23 +319,28 @@ const SalesHome: React.FC = () => {
             </SelectContent>
           </Select>
 
-          <label htmlFor="upload-sales" className="cursor-pointer">
-            <Button variant="outline" className="flex items-center gap-2">
-              <Upload className="h-4 w-4" /> Importar
-            </Button>
-            <input
-              id="upload-sales"
-              type="file"
-              className="hidden"
-              accept=".xlsx, .xls"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) handleUpload(file);
-                e.target.value = "";
-              }}
-            />
-          </label>
+          {/* Botão Importar */}
+          <Button
+            variant="outline"
+            className="flex items-center gap-2"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Upload className="h-4 w-4" /> Importar
+          </Button>
 
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            accept=".xlsx, .xls"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleUpload(file);
+              e.target.value = "";
+            }}
+          />
+
+          {/* Botão limpar */}
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="destructive" className="flex items-center gap-2">
@@ -336,6 +365,7 @@ const SalesHome: React.FC = () => {
         </div>
       </div>
 
+      {/* Cards */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="card">
           <CardHeader className="flex justify-between">
@@ -368,6 +398,7 @@ const SalesHome: React.FC = () => {
         </Card>
       </div>
 
+      {/* Tabela */}
       {loading ? (
         <div className="flex justify-center items-center py-10">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />

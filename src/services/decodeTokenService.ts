@@ -13,7 +13,6 @@ export class DecodeTokenService {
     try {
       const tokenFromApi = jwtDecode(token) as DecodedTokenFromAPi;
       this.decodedToken = this.convertToDecodedToken(tokenFromApi, token);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (e) {
       throw new Error("Unable to decode token");
     }
