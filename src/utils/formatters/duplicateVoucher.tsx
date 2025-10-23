@@ -64,3 +64,22 @@ export async function duplicateVoucherWithItems(
     throw error;
   }
 }
+
+export const parseExcelDate = (val: any) => {
+  if (!val) return null;
+
+  if (val instanceof Date) return val.toISOString().split("T")[0];
+
+  const parts = String(val).split("/");
+  if (parts.length === 3) {
+    const [day, month, year] = parts.map(Number);
+    return new Date(year, month - 1, day).toISOString().split("T")[0];
+  }
+
+  if (!isNaN(val)) {
+    const excelDate = new Date((val - (25567 + 2)) * 86400 * 1000);
+    return excelDate.toISOString().split("T")[0];
+  }
+
+  return null;
+};

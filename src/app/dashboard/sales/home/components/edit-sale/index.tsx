@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useEffect } from "react";
 import {
   Dialog,
@@ -22,8 +23,8 @@ interface EditSaleDialogProps {
   onOpenChange: (open: boolean) => void;
   sale: any;
   onSave: (sale: any) => void;
-  onDelete: (sale: any) => void;
   sellerOptions: string[];
+  estadoOptions: string[];
 }
 
 const EditSaleDialog: React.FC<EditSaleDialogProps> = ({
@@ -31,27 +32,27 @@ const EditSaleDialog: React.FC<EditSaleDialogProps> = ({
   onOpenChange,
   sale,
   onSave,
-  onDelete,
   sellerOptions,
+  estadoOptions,
 }) => {
   const { control, handleSubmit, reset, register } = useForm({
     defaultValues: {
-      client_name: sale?.client_name || "",
-      pix_value: sale?.pix_value || 0,
-      commission: sale?.commission || 0,
-      seller_id: sale?.seller_id || "",
-      phone: sale?.phone || "",
+      cliente: sale?.cliente || "",
+      pix: sale?.pix || 0,
+      comissao: sale?.comissao || 0,
+      vendedor: sale?.vendedor || "",
+      estado: sale?.estado || "",
     },
   });
 
   useEffect(() => {
     if (sale) {
       reset({
-        client_name: sale.client_name,
-        pix_value: sale.pix_value,
-        commission: sale.commission,
-        seller_id: sale.seller_id,
-        phone: sale.phone,
+        cliente: sale.cliente || "",
+        pix: sale.pix || 0,
+        comissao: sale.comissao || 0,
+        vendedor: sale.vendedor || "",
+        estado: sale.estado || "",
       });
     }
   }, [sale, reset]);
@@ -59,6 +60,7 @@ const EditSaleDialog: React.FC<EditSaleDialogProps> = ({
   const onSubmit = (data: any) => {
     if (!sale) return;
     onSave({ ...sale, ...data });
+    onOpenChange(false);
   };
 
   if (!sale) return null;
@@ -72,51 +74,34 @@ const EditSaleDialog: React.FC<EditSaleDialogProps> = ({
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <Input.Base
-            id="client_name"
+            id="cliente"
             label="Cliente"
             isRequired
-            {...register("client_name")}
+            {...register("cliente")}
             classNameContainer="w-full"
           />
 
           <Input.Base
-            id="pix_value"
-            label="PIX"
+            id="pix"
+            label="Valor PIX"
             type="number"
             isRequired
-            {...register("pix_value", { valueAsNumber: true })}
+            {...register("pix", { valueAsNumber: true })}
             classNameContainer="w-full"
           />
 
-          {/* Comissão */}
           <Input.Base
-            id="commission"
+            id="comissao"
             label="Comissão"
             type="number"
             isRequired
-            {...register("commission", { valueAsNumber: true })}
+            {...register("comissao", { valueAsNumber: true })}
             classNameContainer="w-full"
           />
 
-          {/* Telefone / vendedor */}
           <Controller
             control={control}
-            name="phone"
-            render={({ field }) => (
-              <Input.Phone
-                id="seller_phone"
-                label="Telefone do vendedor"
-                isRequired
-                value={field.value}
-                onChange={field.onChange}
-                classNameContainer="w-full"
-              />
-            )}
-          />
-
-          <Controller
-            control={control}
-            name="seller_id"
+            name="vendedor"
             render={({ field }) => (
               <Select onValueChange={field.onChange} value={field.value}>
                 <SelectTrigger className="w-full">
@@ -132,11 +117,33 @@ const EditSaleDialog: React.FC<EditSaleDialogProps> = ({
               </Select>
             )}
           />
+          <Controller
+            control={control}
+            name="estado"
+            render={({ field }) => (
+              <Select onValueChange={field.onChange} value={field.value}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Selecione um estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(estadoOptions ?? []).map((estado) => (
+                    <SelectItem key={estado} value={estado}>
+                      {estado}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          />
 
           <div className="flex justify-end gap-2 mt-4">
             <Button type="submit">Salvar</Button>
-            <Button variant="destructive" onClick={() => onDelete(sale)}>
-              Excluir
+            <Button
+              type="button" 
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              Cancelar
             </Button>
           </div>
         </form>

@@ -1,6 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+} from "react";
+import { v4 as uuidv4 } from "uuid";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -45,6 +52,9 @@ import {
   AlertDialogAction,
 } from "@/components/ui/alert-dialog";
 import { Toast } from "@/components";
+import { parseExcelDate } from "@/utils/formatters/duplicateVoucher";
+
+const PAGE_SIZE = 10;
 
 const SalesHome: React.FC = () => {
   const [allSales, setAllSales] = useState<any[]>([]);
@@ -57,10 +67,10 @@ const SalesHome: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const [currentPage, setCurrentPage] = useState(1);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedSale, setSelectedSale] = useState<any | null>(null);
   const [sellerOptions, setSellerOptions] = useState<string[]>([]);
-  const [sellerMap, setSellerMap] = useState<{ [key: string]: string }>({});
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -81,24 +91,13 @@ const SalesHome: React.FC = () => {
   const fetchSellers = useCallback(async () => {
     const options = await getSellerOptions();
     setSellerOptions(options);
-
-    const { data, error } = await supabase
-      .from("sellers")
-      .select("id, name, photo_url");
-
-    if (!error && data) {
-      const map = data.reduce((acc, s) => {
-        acc[s.name] = s.photo_url || "";
-        return acc;
-      }, {} as { [key: string]: string });
-      setSellerMap(map);
-    }
   }, []);
 
   const fetchSales = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase.from("spreadsheet_sales").select("*");
-
+    const { data, error } = await supabase
+      .from("spreadsheet_sales")
+      .select("*");
     if (error) {
       Toast.Base({
         variant: "error",
@@ -107,38 +106,33 @@ const SalesHome: React.FC = () => {
       });
       setAllSales([]);
     } else {
-      const mappedData = data.map((s) => ({ ...s, seller_name: s.vendedor }));
-      setAllSales(mappedData || []);
+      setAllSales(data || []);
     }
-
     setLoading(false);
   }, []);
 
   useEffect(() => {
-    const initialize = async () => {
+    const loadData = async () => {
       await fetchSellers();
       await fetchSales();
     };
-
-    initialize();
+    loadData();
 
     const channel = supabase
       .channel("spreadsheet_sales")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "spreadsheet_sales" },
-        fetchSales
+        () => fetchSales()
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [fetchSellers, fetchSales]);
+  }, [fetchSales, fetchSellers]);
 
   useEffect(() => {
-    if (!allSales) return;
-
     const currentFilteredSales = allSales.filter((sale) =>
       inPer(sale.data, currentMonth, currentYear)
     );
@@ -151,7 +145,7 @@ const SalesHome: React.FC = () => {
 
     const ranking = rank(
       currentFilteredSales.map((s) => ({
-        vendedor: s.seller_name,
+        vendedor: s.vendedor,
         comissao: s.comissao,
       }))
     ).sort((a, b) => b.total - a.total);
@@ -159,28 +153,29 @@ const SalesHome: React.FC = () => {
     const topSeller = ranking.length > 0 ? ranking[0].vendedor : "N/A";
 
     setStats({ totalPix, salesCount, topSeller });
-    setFilteredSales(currentFilteredSales.slice(0, 10));
-  }, [allSales, currentMonth, currentYear]);
+
+    const startIndex = (currentPage - 1) * PAGE_SIZE;
+    const endIndex = startIndex + PAGE_SIZE;
+    setFilteredSales(currentFilteredSales.slice(startIndex, endIndex));
+  }, [allSales, currentMonth, currentYear, currentPage]);
 
   const handleEditSale = (sale: any) => {
     setSelectedSale(sale);
     setIsEditModalOpen(true);
   };
-
   const handleSaveSale = async (updatedSale: any) => {
     const { id, ...saleToUpdate } = updatedSale;
     const { error } = await supabase
       .from("spreadsheet_sales")
       .update(saleToUpdate)
       .eq("id", id);
-
-    if (error) {
+    if (error)
       Toast.Base({
         variant: "error",
         title: "Erro ao salvar venda",
         description: error.message,
       });
-    } else {
+    else {
       Toast.Base({
         variant: "success",
         title: "Venda atualizada!",
@@ -189,20 +184,18 @@ const SalesHome: React.FC = () => {
       fetchSales();
     }
   };
-
   const handleDeleteSale = async (saleToDelete: any) => {
     const { error } = await supabase
       .from("spreadsheet_sales")
       .delete()
       .eq("id", saleToDelete.id);
-
-    if (error) {
+    if (error)
       Toast.Base({
         variant: "error",
         title: "Erro ao excluir venda",
         description: error.message,
       });
-    } else {
+    else {
       Toast.Base({
         variant: "success",
         title: "Venda excluída!",
@@ -212,43 +205,128 @@ const SalesHome: React.FC = () => {
     }
   };
 
-  // ✅ Upload com Toast.Base + Toast.Update
   const handleUpload = async (file: File) => {
-    let toastId: string | number;
-
     try {
-      toastId = Toast.Base({
-        variant: "loading",
-        title: "Importando planilha...",
-        description: "Aguarde enquanto processamos os dados.",
-        duration: 999999,
-      });
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      const userId = user?.id;
+
+      if (!userId) {
+        Toast.Base({
+          variant: "error",
+          title: "Usuário não logado",
+          description: "Você precisa estar logado para importar vendas.",
+        });
+        return;
+      }
 
       const data = await file.arrayBuffer();
       const workbook = XLSX.read(data);
       const sheet =
         workbook.Sheets["Vendas"] || workbook.Sheets[workbook.SheetNames[0]];
-      if (!sheet) throw new Error("Aba 'Vendas' não encontrada.");
 
-      const parsed = XLSX.utils.sheet_to_json(sheet);
-      const { error } = await supabase.from("spreadsheet_sales").insert(parsed);
-      if (error) throw error;
-
-      Toast.Update({
-        id: toastId,
-        variant: "success",
-        title: "Importação concluída!",
-        description: `${parsed.length} vendas importadas com sucesso.`,
-        duration: 4000,
+      const parsed: any[] = XLSX.utils.sheet_to_json(sheet, {
+        header: [
+          "cliente",
+          "estado",
+          "data",
+          "vendedor",
+          "comissao",
+          "pix",
+          "tipo",
+          "conta",
+        ],
+        range: 3,
+        defval: "",
       });
 
-      fetchSales();
+      const currentYear = new Date().getFullYear();
+
+      const mapped = parsed
+        .filter((row) => row.cliente && row.cliente !== "Nome Cliente") // remove linha de cabeçalho
+        .map((row) => {
+          const parsedData = row.data
+            ? (() => {
+                const d = row.data;
+
+                if (d instanceof Date && !isNaN(d.getTime())) {
+                  return d.toISOString().split("T")[0];
+                }
+
+                if (typeof d === "string") {
+                  const parts = d.split("/");
+                  if (parts.length === 2) {
+                    const [day, month] = parts;
+                    return `${currentYear}-${month.padStart(
+                      2,
+                      "0"
+                    )}-${day.padStart(2, "0")}`;
+                  }
+                  if (parts.length === 3) {
+                    const [day, month, year] = parts;
+                    return `${year}-${month.padStart(2, "0")}-${day.padStart(
+                      2,
+                      "0"
+                    )}`;
+                  }
+                }
+
+                if (typeof d === "number") {
+                  const date = XLSX.SSF.parse_date_code(d);
+                  if (date) {
+                    const yyyy = date.y;
+                    const mm = String(date.m).padStart(2, "0");
+                    const dd = String(date.d).padStart(2, "0");
+                    return `${yyyy}-${mm}-${dd}`;
+                  }
+                }
+
+                return null;
+              })()
+            : null;
+
+          return {
+            id: uuidv4(),
+            cliente: row.cliente,
+            estado: row.estado,
+            data: parsedData,
+            vendedor: row.vendedor,
+            comissao:
+              parseFloat(
+                String(row.comissao || "0")
+                  .replace("R$", "")
+                  .replace(/\./g, "")
+                  .replace(",", ".")
+              ) || 0,
+            pix:
+              parseFloat(
+                String(row.pix || "0")
+                  .replace("R$", "")
+                  .replace(/\./g, "")
+                  .replace(",", ".")
+              ) || 0,
+            tipo: row.tipo,
+            conta: row.conta,
+            user_id: userId,
+            created_at: new Date().toISOString(),
+          };
+        });
+
+      const { error } = await supabase.from("spreadsheet_sales").insert(mapped);
+      if (error) throw error;
+
+      Toast.Base({
+        variant: "success",
+        title: "Importação concluída",
+        description: "As vendas foram importadas com sucesso!",
+      });
     } catch (err: any) {
-      Toast.Update({
-        id: toastId!,
+      console.error(err);
+      Toast.Base({
         variant: "error",
-        title: "Erro ao importar planilha",
-        description: err.message,
+        title: "Erro ao importar",
+        description: err.message || "Ocorreu um erro inesperado.",
       });
     }
   };
@@ -258,18 +336,30 @@ const SalesHome: React.FC = () => {
       await supabase.from("spreadsheet_sales").delete();
       Toast.Base({
         variant: "success",
-        title: "Vendas limpas com sucesso!",
+        title: "Vendas limpas!",
         description: "",
       });
       fetchSales();
     } catch (err: any) {
       Toast.Base({
         variant: "error",
-        title: "Erro ao limpar vendas",
+        title: "Erro ao limpar",
         description: err.message,
       });
     }
   };
+  useEffect(() => {
+    console.log("Todos os registros:", allSales);
+    const currentFilteredSales = allSales.filter((sale) =>
+      inPer(sale.data, currentMonth, currentYear)
+    );
+    console.log("Filtrados para o mês/ano:", currentFilteredSales);
+  }, [allSales, currentMonth, currentYear]);
+
+  const totalPages = Math.ceil(
+    allSales.filter((sale) => inPer(sale.data, currentMonth, currentYear))
+      .length / PAGE_SIZE
+  );
 
   return (
     <motion.div
@@ -278,17 +368,17 @@ const SalesHome: React.FC = () => {
       transition={{ duration: 0.5 }}
       className="space-y-6"
     >
-      {/* Cabeçalho */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-3xl font-bold tracking-tight hologram-text">
           Dashboard de Vendas
         </h1>
-
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Seleção de mês */}
           <Select
             value={currentMonth.toString()}
-            onValueChange={(val) => setCurrentMonth(Number(val))}
+            onValueChange={(val) => {
+              setCurrentMonth(Number(val));
+              setCurrentPage(1);
+            }}
           >
             <SelectTrigger className="w-[160px] chip">
               <SelectValue />
@@ -301,11 +391,12 @@ const SalesHome: React.FC = () => {
               ))}
             </SelectContent>
           </Select>
-
-          {/* Seleção de ano */}
           <Select
             value={currentYear.toString()}
-            onValueChange={(val) => setCurrentYear(Number(val))}
+            onValueChange={(val) => {
+              setCurrentYear(Number(val));
+              setCurrentPage(1);
+            }}
           >
             <SelectTrigger className="w-[110px] chip">
               <SelectValue />
@@ -318,8 +409,6 @@ const SalesHome: React.FC = () => {
               ))}
             </SelectContent>
           </Select>
-
-          {/* Botão Importar */}
           <Button
             variant="outline"
             className="flex items-center gap-2"
@@ -327,7 +416,6 @@ const SalesHome: React.FC = () => {
           >
             <Upload className="h-4 w-4" /> Importar
           </Button>
-
           <input
             ref={fileInputRef}
             type="file"
@@ -339,8 +427,6 @@ const SalesHome: React.FC = () => {
               e.target.value = "";
             }}
           />
-
-          {/* Botão limpar */}
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="destructive" className="flex items-center gap-2">
@@ -365,7 +451,6 @@ const SalesHome: React.FC = () => {
         </div>
       </div>
 
-      {/* Cards */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="card">
           <CardHeader className="flex justify-between">
@@ -376,7 +461,6 @@ const SalesHome: React.FC = () => {
             {formatCurrency(stats.totalPix)}
           </CardContent>
         </Card>
-
         <Card className="card">
           <CardHeader className="flex justify-between">
             <CardTitle>Número de Vendas</CardTitle>
@@ -386,7 +470,6 @@ const SalesHome: React.FC = () => {
             {stats.salesCount}
           </CardContent>
         </Card>
-
         <Card className="card">
           <CardHeader className="flex justify-between">
             <CardTitle>Top Vendedor</CardTitle>
@@ -398,7 +481,6 @@ const SalesHome: React.FC = () => {
         </Card>
       </div>
 
-      {/* Tabela */}
       {loading ? (
         <div className="flex justify-center items-center py-10">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -414,6 +496,8 @@ const SalesHome: React.FC = () => {
                 <TableRow>
                   <TableHead>Data</TableHead>
                   <TableHead>Vendedor</TableHead>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Estado</TableHead>
                   <TableHead className="text-right">Comissão</TableHead>
                   <TableHead className="text-right">PIX</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
@@ -423,13 +507,16 @@ const SalesHome: React.FC = () => {
                 {filteredSales.map((sale) => (
                   <TableRow key={sale.id}>
                     <TableCell>{formatDate(sale.data)}</TableCell>
-                    <TableCell>{sale.seller_name}</TableCell>
+                    <TableCell>{sale.vendedor}</TableCell>
+                    <TableCell>{sale.cliente}</TableCell>
+                    <TableCell>{sale.estado}</TableCell>
                     <TableCell className="text-right">
                       {formatCurrency(sale.comissao)}
                     </TableCell>
                     <TableCell className="text-right">
                       {formatCurrency(sale.pix)}
                     </TableCell>
+
                     <TableCell className="flex gap-2 justify-end text-right">
                       <Button
                         size="sm"
@@ -450,6 +537,28 @@ const SalesHome: React.FC = () => {
                 ))}
               </TableBody>
             </Table>
+
+            <div className="flex justify-end gap-2 mt-4">
+              <Button
+                size="sm"
+                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                disabled={currentPage === 1}
+              >
+                Anterior
+              </Button>
+              <span className="flex items-center gap-2">
+                Página {currentPage} de {totalPages}
+              </span>
+              <Button
+                size="sm"
+                onClick={() =>
+                  setCurrentPage((p) => Math.min(p + 1, totalPages))
+                }
+                disabled={currentPage === totalPages}
+              >
+                Próxima
+              </Button>
+            </div>
           </CardContent>
         </Card>
       ) : (
@@ -466,10 +575,38 @@ const SalesHome: React.FC = () => {
         <EditSaleDialog
           sale={selectedSale}
           isOpen={isEditModalOpen}
-          onOpenChange={(open) => setIsEditModalOpen(open)}
+          onOpenChange={setIsEditModalOpen}
           onSave={handleSaveSale}
-          onDelete={handleDeleteSale}
           sellerOptions={sellerOptions}
+          estadoOptions={[
+            "AC",
+            "AL",
+            "AP",
+            "AM",
+            "BA",
+            "CE",
+            "DF",
+            "ES",
+            "GO",
+            "MA",
+            "MT",
+            "MS",
+            "MG",
+            "PA",
+            "PB",
+            "PR",
+            "PE",
+            "PI",
+            "RJ",
+            "RN",
+            "RS",
+            "RO",
+            "RR",
+            "SC",
+            "SP",
+            "SE",
+            "TO",
+          ]}
         />
       )}
     </motion.div>
