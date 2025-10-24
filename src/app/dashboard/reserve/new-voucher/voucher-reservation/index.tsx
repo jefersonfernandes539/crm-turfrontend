@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { createVoucherFromReservation } from "@/hooks/create-voucher";
 import { ReservationFormValues } from "@/utils/lib/schemas/reservation-schema";
 import { Loader2 } from "lucide-react";
+import React, { useState } from "react";
 
 interface VoucherFormProps {
   initialData: ReservationFormValues;
@@ -19,7 +20,7 @@ export function FormResevation({
   isSaving = false,
 }: VoucherFormProps) {
   const [formData, setFormData] = useState<ReservationFormValues>(initialData);
-
+  const [loading, setLoading] = useState(false);
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement>,
     section: "items" | "passengers" | "reservation",
@@ -50,9 +51,11 @@ export function FormResevation({
       return { ...prev, passengers: updated };
     });
   };
-
-  const handleSubmit = () => {
-    if (onSubmit) onSubmit(formData);
+  const handleSubmit = async () => {
+    setLoading(true);
+    await createVoucherFromReservation(formData);
+    setLoading(false);
+    if (onSubmit) onSubmit(formData); // opcional, se precisar notificar o pai
   };
 
   return (
@@ -101,11 +104,10 @@ export function FormResevation({
         </div>
         <div>
           <Label>Total</Label>
-          <Input type="number" value={formData.total_items_net} readOnly />
+          <Input type="number" value={formData.total_items_net} onChange={(e) => handleChange(e, "reservation", undefined, "total_items_net")} />
         </div>
       </div>
 
-      {/* Passageiros */}
       <div>
         <h3 className="text-lg font-semibold mb-2">Passageiros</h3>
         {formData.passengers.map((p, idx) => (

@@ -1,15 +1,26 @@
 "use client";
 
-import React, {
-  useState,
-  useEffect,
-  useMemo,
-  useCallback,
-  useRef,
-} from "react";
-import { v4 as uuidv4 } from "uuid";
-import { motion } from "framer-motion";
+import { Toast } from "@/components";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -18,41 +29,29 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import {
-  DollarSign,
-  ShoppingCart,
-  UserCheck,
-  Loader2,
-  Upload,
-  Trash2,
-} from "lucide-react";
 import { supabase } from "@/services/supabaseClient";
 import { formatCurrency, formatDate } from "@/utils/lib/helpers/formatCurrency";
-import { inPer, rank } from "@/utils/lib/xlsx-utils";
 import { getSellerOptions } from "@/utils/lib/sellers";
-import EditSaleDialog from "./components/edit-sale";
-import * as XLSX from "xlsx";
+import { inPer, rank } from "@/utils/lib/xlsx-utils";
+import { motion } from "framer-motion";
 import {
-  AlertDialog,
-  AlertDialogTrigger,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction,
-} from "@/components/ui/alert-dialog";
-import { Toast } from "@/components";
-import { parseExcelDate } from "@/utils/formatters/duplicateVoucher";
+  DollarSign,
+  Loader2,
+  ShoppingCart,
+  Trash2,
+  Upload,
+  UserCheck,
+} from "lucide-react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { v4 as uuidv4 } from "uuid";
+import * as XLSX from "xlsx";
+import EditSaleDialog from "./components/edit-sale";
 
 const PAGE_SIZE = 10;
 
@@ -330,24 +329,38 @@ const SalesHome: React.FC = () => {
       });
     }
   };
+const handleClearSales = async () => {
+  try {
+    const startDate = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-01`;
+    const nextMonth = currentMonth + 1;
+    const nextYear = nextMonth > 11 ? currentYear + 1 : currentYear;
+    const formattedNextMonth = String((nextMonth % 12) + 1).padStart(2, "0");
+    const endDate = `${nextYear}-${formattedNextMonth}-01`;
 
-  const handleClearSales = async () => {
-    try {
-      await supabase.from("spreadsheet_sales").delete();
-      Toast.Base({
-        variant: "success",
-        title: "Vendas limpas!",
-        description: "",
-      });
-      fetchSales();
-    } catch (err: any) {
-      Toast.Base({
-        variant: "error",
-        title: "Erro ao limpar",
-        description: err.message,
-      });
-    }
-  };
+    const { error } = await supabase
+      .from("spreadsheet_sales")
+      .delete()
+      .gte("data", startDate)
+      .lt("data", endDate);
+
+    if (error) throw error;
+
+    Toast.Base({
+      variant: "success",
+      title: "Vendas do período limpas!",
+      description: "",
+    });
+
+    fetchSales();
+  } catch (err: any) {
+    Toast.Base({
+      variant: "error",
+      title: "Erro ao limpar",
+      description: err.message,
+    });
+  }
+};
+
   useEffect(() => {
     console.log("Todos os registros:", allSales);
     const currentFilteredSales = allSales.filter((sale) =>
@@ -360,6 +373,8 @@ const SalesHome: React.FC = () => {
     allSales.filter((sale) => inPer(sale.data, currentMonth, currentYear))
       .length / PAGE_SIZE
   );
+
+  
 
   return (
     <motion.div
