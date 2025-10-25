@@ -58,7 +58,7 @@ const NovaReserva = () => {
   const fetchOperators = useCallback(async () => {
     const { data, error } = await supabase
       .from("operators")
-      .select("id, name")
+      .select("id, name, whatsapp")
       .eq("active", true)
       .eq("type", "OPERADORA")
       .order("name");
@@ -229,9 +229,21 @@ Restante: ${data.remaining}
         description: "Escolha como enviar a mensagem pelo WhatsApp.",
       });
 
-      const message = generateWhatsAppMessage(data);
-      setWaMessage(message);
-      setWaNumber("558592709853");
+      // Pegar número do operador
+      const operator = operators.find((op) => op.id === data.operator_id);
+
+      if (!operator?.whatsapp) {
+        Toast.Base({
+          variant: "error",
+          title: "Operador sem WhatsApp",
+          description:
+            "Não é possível enviar a mensagem sem o número do operador.",
+        });
+        return;
+      }
+
+      setWaNumber(operator.whatsapp);
+      setWaMessage(generateWhatsAppMessage(data));
       setWaModalOpen(true);
     } catch (error: any) {
       Toast.Base({
@@ -297,23 +309,17 @@ Restante: ${data.remaining}
 
       {waModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
-          <div className="bg-gray-700 p-6 rounded-lg w-96 space-y-4">
+          <div className="bg-gray-600 p-6 rounded-lg w-96 space-y-4">
             <h2 className="text-xl font-bold flex items-center gap-2">
               <MessageCircle className="text-green-500" /> Enviar WhatsApp
             </h2>
             <p>Escolha como deseja enviar a mensagem:</p>
             <div className="flex flex-col gap-3 mt-4">
-              {/* <Button
-                onClick={() => openWhatsApp(waNumber, waMessage)}
-                className="bg-green-500 hover:bg-green-600"
-              >
-                WhatsApp Business
-              </Button> */}
               <Button
                 onClick={() => openWhatsApp(waNumber, waMessage)}
                 className="bg-green-500 hover:bg-green-600"
               >
-                WhatsApp Normal
+                WhatsApp
               </Button>
               <Button variant="outline" onClick={() => setWaModalOpen(false)}>
                 Cancelar
