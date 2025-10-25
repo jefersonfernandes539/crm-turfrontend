@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Resolver, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, Save } from "lucide-react";
+import { Loader2, Save, MessageCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Toast } from "@/components";
@@ -26,6 +26,9 @@ const NovaReserva = () => {
   const [operators, setOperators] = useState<any[]>([]);
   const [sellers, setSellers] = useState<any[]>([]);
   const [pricebooks, setPricebooks] = useState<any[]>([]);
+  const [waModalOpen, setWaModalOpen] = useState(false);
+  const [waMessage, setWaMessage] = useState("");
+  const [waNumber, setWaNumber] = useState("");
 
   const {
     register,
@@ -131,6 +134,36 @@ const NovaReserva = () => {
     setValue("code", genCode());
   }, [selectedOperatorId, fetchPricebooks, setValue]);
 
+  const generateWhatsAppMessage = (data: ReservationFormValues) => {
+    const passengers = data.passengers
+      .map((p) => `- ${p.name} (${p.phone})${p.is_infant ? " [Bebê]" : ""}`)
+      .join("\n");
+
+    const items = data.items
+      .map((i) => `- ${i.name} (${i.quantity} x ${i.net})`)
+      .join("\n");
+
+    const message = `
+Nova Reserva:
+Código: ${data.code}
+Contratante: ${data.contractor_name}
+Embarque: ${data.embark_place}
+Data: ${data.date}
+
+Passageiros:
+${passengers}
+
+Itens:
+${items}
+
+Total: ${data.total_items_net}
+Entrada: ${data.entry_value}
+Restante: ${data.remaining}
+    `;
+
+    return encodeURIComponent(message);
+  };
+
   const onSubmit = async (data: ReservationFormValues) => {
     try {
       setLoading(true);
@@ -155,7 +188,6 @@ const NovaReserva = () => {
         .single();
 
       if (reservationError) throw reservationError;
-
       const reservationId = reservationData.id;
 
       const itemsPayload = data.items.map((item) => ({
@@ -174,7 +206,6 @@ const NovaReserva = () => {
         const { error: itemsError } = await supabase
           .from("reservation_items")
           .insert(itemsPayload);
-
         if (itemsError) throw itemsError;
       }
 
@@ -189,17 +220,19 @@ const NovaReserva = () => {
         const { error: passengersError } = await supabase
           .from("passengers")
           .insert(passengersPayload);
-
         if (passengersError) throw passengersError;
       }
 
       Toast.Base({
         variant: "success",
         title: "Reserva criada com sucesso!",
-        description: "Todos os dados foram salvos corretamente.",
+        description: "Escolha como enviar a mensagem pelo WhatsApp.",
       });
 
-      router.push("/dashboard/reserve");
+      const message = generateWhatsAppMessage(data);
+      setWaMessage(message);
+      setWaNumber("558592709853");
+      setWaModalOpen(true);
     } catch (error: any) {
       Toast.Base({
         variant: "error",
@@ -211,46 +244,85 @@ const NovaReserva = () => {
     }
   };
 
-  return (
-    <form
-      onSubmit={handleSubmit(onSubmit)}
-      className="space-y-6 max-w-6xl mx-auto p-6"
-    >
-      <div className="flex justify-between items-center border-b pb-4">
-        <h1 className="text-2xl font-bold">📝 Nova Reserva</h1>
-        <Button type="submit" disabled={loading}>
-          {loading ? (
-            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-          ) : (
-            <Save className="mr-2 h-5 w-5" />
-          )}
-          Salvar
-        </Button>
-      </div>
+  const openWhatsApp = (number: string, message: string) => {
+    const waLink = `https://wa.me/${number}?text=${message}`;
+    window.open(waLink, "_blank");
+  };
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <ReservationInfoForm
+  return (
+    <>
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        className="space-y-6 max-w-6xl mx-auto p-6"
+      >
+        <div className="flex justify-between items-center border-b pb-4">
+          <h1 className="text-2xl font-bold">📝 Nova Reserva</h1>
+          <Button type="submit" disabled={loading}>
+            {loading ? (
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+            ) : (
+              <Save className="mr-2 h-5 w-5" />
+            )}
+            Salvar
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <ReservationInfoForm
+            control={control}
+            register={register}
+            errors={errors}
+            operators={operators}
+            sellers={sellers}
+          />
+          <PassengersForm
+            control={control}
+            register={register}
+            errors={errors}
+          />
+        </div>
+
+        <ItemsForm
           control={control}
           register={register}
           errors={errors}
-          operators={operators}
-          sellers={sellers}
+          pricebooks={pricebooks}
+          selectedOperatorId={selectedOperatorId}
+          watch={watch}
+          setValue={setValue}
         />
-        <PassengersForm control={control} register={register} errors={errors} />
-      </div>
 
-      <ItemsForm
-        control={control}
-        register={register}
-        errors={errors}
-        pricebooks={pricebooks}
-        selectedOperatorId={selectedOperatorId}
-        watch={watch}
-        setValue={setValue}
-      />
+        <TotalsDisplay control={control} setValue={setValue} />
+      </form>
 
-      <TotalsDisplay control={control} setValue={setValue} />
-    </form>
+      {waModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
+          <div className="bg-gray-700 p-6 rounded-lg w-96 space-y-4">
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <MessageCircle className="text-green-500" /> Enviar WhatsApp
+            </h2>
+            <p>Escolha como deseja enviar a mensagem:</p>
+            <div className="flex flex-col gap-3 mt-4">
+              {/* <Button
+                onClick={() => openWhatsApp(waNumber, waMessage)}
+                className="bg-green-500 hover:bg-green-600"
+              >
+                WhatsApp Business
+              </Button> */}
+              <Button
+                onClick={() => openWhatsApp(waNumber, waMessage)}
+                className="bg-green-500 hover:bg-green-600"
+              >
+                WhatsApp Normal
+              </Button>
+              <Button variant="outline" onClick={() => setWaModalOpen(false)}>
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

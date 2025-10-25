@@ -75,13 +75,11 @@ export function ReservationsTable({
     );
   }
 
-  // Função util para gerar array de páginas com limite visual (janela)
   const renderPageNumbers = () => {
     const maxButtons = 7;
     if (totalPages <= maxButtons) {
       return Array.from({ length: totalPages }, (_, i) => i + 1);
     }
-    // se muitas páginas, mostrar janela em torno da currentPage
     const windowSize = 5;
     let start = Math.max(1, currentPage - Math.floor(windowSize / 2));
     let end = start + windowSize - 1;
