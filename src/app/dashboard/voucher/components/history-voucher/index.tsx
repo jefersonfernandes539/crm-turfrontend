@@ -70,7 +70,7 @@ export function VoucherHistory() {
     if (error) {
       Toast.Base({
         title: "Erro ao buscar voucher!",
-        description: "voucher não encontrado.",
+        description: "Voucher não encontrado.",
         variant: "error",
       });
     } else {
@@ -108,13 +108,13 @@ export function VoucherHistory() {
     if (error) {
       Toast.Base({
         title: "Erro ao deletar voucher!",
-        description: "voucher não deletado.",
+        description: "Voucher não deletado.",
         variant: "error",
       });
     } else {
       Toast.Base({
         title: "Sucesso ao deletar voucher!",
-        description: "voucher deletado.",
+        description: "Voucher deletado.",
         variant: "success",
       });
       fetchVouchers();
@@ -131,7 +131,45 @@ export function VoucherHistory() {
       });
       return;
     }
-    await gerarVoucherPDF(voucher.payload);
+
+    const payload =
+      "contractor_name" in voucher.payload
+        ? {
+            codigo: voucher.payload.code,
+            contratante: voucher.payload.contractor_name,
+            itens: (voucher.payload.items || []).map((i: any) => ({
+              descricao: i.name,
+              data: i.date,
+              hora: i.time || "",
+            })),
+            passageiros: (voucher.payload.passengers || []).map((p: any) => ({
+              nome: p.name,
+              telefone: p.phone || "",
+              colo: p.is_infant || false,
+            })),
+            total: voucher.payload.total_items_net || 0,
+            entrada: voucher.payload.entry_value || 0,
+            restante: voucher.payload.remaining || 0,
+            observacoes: voucher.payload.obs || "",
+          }
+        : voucher.payload;
+
+    try {
+      await gerarVoucherPDF(payload);
+      Toast.Base({
+        title: "Voucher gerado!",
+        description: "O download do PDF começará em breve.",
+        variant: "success",
+      });
+    } catch (error) {
+      console.error("Erro ao gerar PDF:", error);
+      Toast.Base({
+        title: "Erro ao gerar voucher",
+        description:
+          "Ocorreu um problema ao tentar gerar o PDF. Verifique o console.",
+        variant: "error",
+      });
+    }
   };
 
   const handleEdit = (voucherId: string) => {
@@ -235,7 +273,6 @@ export function VoucherHistory() {
         </Table>
       </div>
 
-      {/* Paginação */}
       <div className="flex flex-col sm:flex-row items-center justify-between mt-4 gap-2 sm:gap-0">
         <Button
           variant="outline"

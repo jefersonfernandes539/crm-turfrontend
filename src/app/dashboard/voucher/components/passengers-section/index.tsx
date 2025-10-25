@@ -99,7 +99,7 @@ export function PassengersSection({
               <Input {...register(`passageiros.${index}.telefone`)} />
             </div>
 
-            <div className="flex items-center space-x-2 pt-6">
+            <div className="flex items-center space-x-2 pt-6 justify-center">
               <Controller
                 name={`passageiros.${index}.colo`}
                 control={control}
@@ -117,16 +117,16 @@ export function PassengersSection({
               >
                 Criança de colo?
               </label>
+              <Button
+                type="button"
+                variant="ghost"
+                className="mt-4"
+                size="icon"
+                onClick={() => removePassenger(index)}
+              >
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
             </div>
-
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={() => removePassenger(index)}
-            >
-              <Trash2 className="h-4 w-4 text-destructive" />
-            </Button>
           </div>
         ))}
       </CardContent>

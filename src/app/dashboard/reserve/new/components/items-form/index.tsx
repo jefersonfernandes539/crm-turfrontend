@@ -143,25 +143,27 @@ const ItemsForm: React.FC<ItemsFormProps> = ({
               />
             </div>
 
-            <div>
-              <Label>Subtotal</Label>
-              <Input
-                type="number"
-                value={items[index]?.subtotal || 0}
-                readOnly
-                className="bg-gray-100"
-              />
-            </div>
+            <div className="flex justify-center items-center">
+              <div>
+                <Label>Subtotal</Label>
+                <Input
+                  type="number"
+                  value={items[index]?.subtotal || 0}
+                  readOnly
+                  className="bg-gray-100"
+                />
+              </div>
 
-            <div className="flex justify-end">
-              <Button
-                type="button"
-                variant="destructive"
-                size="icon"
-                onClick={() => remove(index)}
-              >
-                <Trash2 size={18} />
-              </Button>
+              <div className="mt-4 pl-2">
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="icon"
+                  onClick={() => remove(index)}
+                >
+                  <Trash2 size={18} />
+                </Button>
+              </div>
             </div>
           </div>
         ))}

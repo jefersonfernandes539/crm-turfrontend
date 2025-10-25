@@ -62,6 +62,7 @@ const EditVoucher: React.FC<EditVoucherProps> = ({ voucherId }) => {
     append: appendItem,
     remove: removeItem,
   } = useFieldArray({ control: form.control, name: "itens" });
+
   const {
     fields: passageiroFields,
     append: appendPassageiro,
@@ -71,6 +72,7 @@ const EditVoucher: React.FC<EditVoucherProps> = ({ voucherId }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [voucherData, setVoucherData] = useState<any>(null);
 
   useEffect(() => {
     if (!voucherId) {
@@ -87,28 +89,49 @@ const EditVoucher: React.FC<EditVoucherProps> = ({ voucherId }) => {
           .eq("id", voucherId)
           .single();
 
-        console.log("voucherId:", voucherId);
-        console.log("data:", data);
-        console.log("error:", error);
-
         if (error || !data) throw error || new Error("Voucher não encontrado");
 
-        const formattedData: VoucherFormData = {
-          codigo: data.codigo,
-          vendedor:
-            data.vendedor || data.seller_name || data.operator_name || "",
-          contratante: data.cliente_nome || "",
-          telefone: data.telefone || "",
-          embarque: data.hotel || "",
-          itens: data.payload?.itens || [],
-          passageiros: data.payload?.passageiros || [],
-          total: data.valor_total_centavos / 100 || 0,
-          entrada: data.entrada_centavos / 100 || 0,
-          restante: data.restante_centavos / 100 || 0,
-          observacoes: data.obs || "",
-        };
-        form.reset(formattedData);
+        let vendedorNome = data.seller_name || data.operator_name || "";
+        if (!vendedorNome && data.seller_id) {
+          const { data: sellerData } = await supabase
+            .from("sellers")
+            .select("name")
+            .eq("id", data.seller_id)
+            .single();
+          vendedorNome = sellerData?.name || "";
+        }
 
+        const itens = Array.isArray(data.payload?.itens)
+          ? data.payload.itens.map((i: any) => ({
+              descricao: i.descricao || i.name || "",
+              data: i.data || i.date || "",
+              hora: i.hora || i.time || "",
+            }))
+          : [];
+
+        const passageiros = Array.isArray(data.payload?.passageiros)
+          ? data.payload.passageiros.map((p: any) => ({
+              nome: p.nome || p.name || "",
+              telefone: p.telefone || p.phone || "",
+              colo: p.colo ?? p.is_infant ?? false,
+            }))
+          : [];
+
+        const formattedData: VoucherFormData = {
+          codigo: data.codigo || data.payload?.codigo || "",
+          vendedor: vendedorNome,
+          contratante: data.cliente_nome || data.payload?.contratante || "",
+          telefone: data.telefone || data.payload?.telefone || "",
+          embarque: data.hotel || data.payload?.embarque || "",
+          itens,
+          passageiros,
+          total: (data.valor_total_centavos ?? 0) / 100,
+          entrada: (data.entrada_centavos ?? 0) / 100,
+          restante: (data.restante_centavos ?? 0) / 100,
+          observacoes: data.obs || data.payload?.observacoes || "",
+        };
+
+        setVoucherData(data);
         form.reset(formattedData);
       } catch (error) {
         console.error("Erro ao buscar voucher:", error);
@@ -144,7 +167,11 @@ const EditVoucher: React.FC<EditVoucherProps> = ({ voucherId }) => {
           cliente_nome: values.contratante,
           telefone: values.telefone,
           hotel: values.embarque,
-          payload: { itens: values.itens, passageiros: values.passageiros },
+          payload: {
+            ...voucherData?.payload,
+            items: values.itens,
+            passengers: values.passageiros,
+          },
           valor_total_centavos: Math.round(values.total * 100),
           entrada_centavos: Math.round(values.entrada * 100),
           restante_centavos: Math.round(values.restante * 100),
@@ -207,6 +234,7 @@ const EditVoucher: React.FC<EditVoucherProps> = ({ voucherId }) => {
           <h1 className="text-2xl font-bold text-btj-text">
             Gerador de Voucher Manual
           </h1>
+
           <Card>
             <CardHeader>
               <CardTitle>Informações Gerais</CardTitle>
@@ -437,6 +465,7 @@ const EditVoucher: React.FC<EditVoucherProps> = ({ voucherId }) => {
               </Button>
             </CardContent>
           </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Resumo de Valores</CardTitle>

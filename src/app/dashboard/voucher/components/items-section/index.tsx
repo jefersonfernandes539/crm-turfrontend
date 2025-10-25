@@ -125,21 +125,21 @@ export function ItemsSection({
               <Input type="date" {...register(`itens.${index}.data`)} />
             </div>
 
-            <div className="col-span-full sm:col-span-1 md:col-span-1 space-y-1">
+            <div className="col-span-full sm:col-span-1 md:col-span-1 space-y-1 pr-4">
               <Label>Horário</Label>
               <Input
                 type="time"
                 {...register(`itens.${index}.hora`)}
-                className="w-full"
+                className="w-20"
               />
             </div>
 
-            <div className="col-span-full md:col-span-2 space-y-1">
+            <div className="col-span-full md:col-span-2 space-y-1 pl-4">
               <Label>Observações</Label>
               <Input {...register(`itens.${index}.observacoes`)} />
             </div>
 
-            <div className="col-span-full md:col-span-1 self-start">
+            <div className="col-span-full md:col-span-1 self-start mt-4">
               <Button
                 type="button"
                 variant="ghost"
