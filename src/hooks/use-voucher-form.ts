@@ -27,9 +27,8 @@ export function useVoucherForm(): UseFormReturn<VoucherFormData> {
     },
   });
 
-  // Carregar rascunho do localStorage ao montar
   useEffect(() => {
-    const raw = localStorage.getItem("voucher_draft");
+    const raw = sessionStorage.getItem("voucher_draft");
     if (raw) {
       try {
         const parsed = JSON.parse(raw);
@@ -37,12 +36,11 @@ export function useVoucherForm(): UseFormReturn<VoucherFormData> {
       } catch (e) {
         console.error("Falha ao carregar rascunho de voucher", e);
       } finally {
-        localStorage.removeItem("voucher_draft");
+        sessionStorage.removeItem("voucher_draft");
       }
     }
   }, [form]);
 
-  // Recalcula automaticamente o restante
   const watchTotal = form.watch("total");
   const watchEntrada = form.watch("entrada");
 

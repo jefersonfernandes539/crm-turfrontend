@@ -30,11 +30,11 @@ async function fromSupabasePublic(): Promise<string | null> {
 
 export async function getBrandLogo(): Promise<string | null> {
   try {
-    const cached = localStorage.getItem(KEY);
+    const cached = sessionStorage.getItem(KEY);
     if (cached) return cached;
 
     const dataUrl = await fromSupabasePublic();
-    if (dataUrl) localStorage.setItem(KEY, dataUrl);
+    if (dataUrl) sessionStorage.setItem(KEY, dataUrl);
 
     return dataUrl;
   } catch (error) {

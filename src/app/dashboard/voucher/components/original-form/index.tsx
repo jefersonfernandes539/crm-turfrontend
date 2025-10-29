@@ -165,7 +165,7 @@ const NovoVoucherForm = ({ initialData, voucherId }: NovoVoucherFormProps) => {
 
   useEffect(() => {
     const fromReservation = searchParams.get("fromReservation");
-    const raw = localStorage.getItem("voucher_draft");
+    const raw = sessionStorage.getItem("voucher_draft");
 
     if (fromReservation && raw) {
       try {
@@ -174,7 +174,7 @@ const NovoVoucherForm = ({ initialData, voucherId }: NovoVoucherFormProps) => {
       } catch (e) {
         console.error("Failed to parse voucher draft:", e);
       } finally {
-        localStorage.removeItem("voucher_draft");
+        sessionStorage.removeItem("voucher_draft");
       }
     } else if (initialData) {
       reset(initialData);
