@@ -1,12 +1,12 @@
 "use client";
+import { Input } from "@/components";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Plus, Trash2 } from "lucide-react";
 import React from "react";
 import { Controller, useFieldArray } from "react-hook-form";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2 } from "lucide-react";
-import { Input } from "@/components";
 
 interface Props {
   control: any;
@@ -35,7 +35,6 @@ const PassengersForm: React.FC<Props> = ({ control, register, errors }) => {
               <Input.Base
                 id={`passengers-${index}-name`}
                 label="Nome"
-                isRequired
                 isInvalid={!!errors.passengers?.[index]?.name}
                 errorMessage={
                   errors.passengers?.[index]?.name?.message as string
@@ -54,7 +53,6 @@ const PassengersForm: React.FC<Props> = ({ control, register, errors }) => {
                     <Input.Phone
                       id={`passengers-${index}-phone`}
                       label="Telefone"
-                      isRequired
                       isInvalid={!!errors.passengers?.[index]?.phone}
                       errorMessage={
                         errors.passengers?.[index]?.phone?.message as string
