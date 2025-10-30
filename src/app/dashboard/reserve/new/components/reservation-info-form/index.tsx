@@ -9,6 +9,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Seller } from "@/types/Seller";
+import { Operator } from "@/types/Voucher";
+import { ReservationFormValues } from "@/utils/lib/schemas/reservation-schema";
 import React from "react";
 import {
   Control,
@@ -16,10 +19,6 @@ import {
   FieldErrors,
   UseFormRegister,
 } from "react-hook-form";
-
-import { Operator } from "@/types/Operator";
-import { Seller } from "@/types/Seller";
-import { ReservationFormValues } from "@/utils/lib/schemas/reservation-schema";
 
 interface Props {
   control: Control<ReservationFormValues>;
@@ -51,16 +50,15 @@ const ReservationInfoForm: React.FC<Props> = ({
             className="bg-muted"
           />
         </div>
-
         <div className="space-y-1">
-          <Label>Operadora</Label>
+          <Label>Operadora / Pousada</Label>
           <Controller
             name="operator_id"
             control={control}
             render={({ field }) => (
               <Select onValueChange={field.onChange} value={field.value || ""}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione a operadora" />
+                  <SelectValue placeholder="Selecione uma operadora" />
                 </SelectTrigger>
                 <SelectContent>
                   {operators.map((op) => (
@@ -73,12 +71,9 @@ const ReservationInfoForm: React.FC<Props> = ({
             )}
           />
           {errors.operator_id && (
-            <p className="text-sm text-destructive">
-              {errors.operator_id.message}
-            </p>
+            <p className="text-sm text-destructive">{errors.operator_id.message}</p>
           )}
         </div>
-
         <div className="space-y-1">
           <Label>Vendedor</Label>
           <Controller

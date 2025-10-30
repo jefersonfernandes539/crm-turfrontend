@@ -61,7 +61,6 @@ const NovaReserva = () => {
       .from("operators")
       .select("id, name, whatsapp")
       .eq("active", true)
-      .eq("type", "OPERADORA")
       .order("name");
 
     if (error)
@@ -136,22 +135,18 @@ const NovaReserva = () => {
   }, [selectedOperatorId, fetchPricebooks, setValue]);
 
 const generateWhatsAppMessage = (data: ReservationFormValues) => {
-  // Função auxiliar para formatar valores em BRL
   const formatCurrencyBRL = (value: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 
-  // Função auxiliar para formatar datas no padrão brasileiro
   const formatDateBR = (dateStr: string) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString("pt-BR");
   };
 
-  // Lista de passageiros
   const passengersList = data.passengers
     .map((p) => `- ${p.name} (${p.phone})${p.is_infant ? " [Bebê]" : ""}`)
     .join("\n");
 
-  // Lista de itens com quantidade, valor e data do item
   const itemsList = data.items
     .map((i) => `- ${i.name} (${i.quantity} x ${formatCurrencyBRL(i.net)}) - ${formatDateBR(i.date)}`)
     .join("\n");

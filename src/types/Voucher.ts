@@ -47,7 +47,7 @@ export type VoucherDB = {
   entrada_centavos?: number;
   restante_centavos?: number;
   obs?: string;
-  status?: string; // 'EMITIDO' | outro
+  status?: string;
   emitido_em?: string;
   pdf_filename?: string;
   pdf_url?: string;
