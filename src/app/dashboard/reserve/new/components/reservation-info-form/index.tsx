@@ -1,14 +1,7 @@
 "use client";
-import React from "react";
-import {
-  Control,
-  Controller,
-  UseFormRegister,
-  FieldErrors,
-} from "react-hook-form";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -16,6 +9,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import React from "react";
+import {
+  Control,
+  Controller,
+  FieldErrors,
+  UseFormRegister,
+} from "react-hook-form";
 
 import { Operator } from "@/types/Operator";
 import { Seller } from "@/types/Seller";
@@ -58,7 +58,7 @@ const ReservationInfoForm: React.FC<Props> = ({
             name="operator_id"
             control={control}
             render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value}>
+              <Select onValueChange={field.onChange} value={field.value || ""}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione a operadora" />
                 </SelectTrigger>
@@ -85,7 +85,7 @@ const ReservationInfoForm: React.FC<Props> = ({
             name="seller_id"
             control={control}
             render={({ field }) => (
-              <Select onValueChange={field.onChange} value={field.value}>
+              <Select onValueChange={field.onChange} value={field.value || ""}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o vendedor" />
                 </SelectTrigger>

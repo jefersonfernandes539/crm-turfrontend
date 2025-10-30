@@ -1,23 +1,23 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
-import { Resolver, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, Save, MessageCircle } from "lucide-react";
+import { Loader2, MessageCircle, Save } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+import { Resolver, useForm } from "react-hook-form";
 
-import { Button } from "@/components/ui/button";
 import { Toast } from "@/components";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/services/supabaseClient";
 
 import {
-  reservationSchema,
   ReservationFormValues,
   genCode,
+  reservationSchema,
 } from "@/utils/lib/schemas/reservation-schema";
-import ReservationInfoForm from "./components/reservation-info-form";
-import PassengersForm from "./components/passengers-form";
 import ItemsForm from "./components/items-form";
+import PassengersForm from "./components/passengers-form";
+import ReservationInfoForm from "./components/reservation-info-form";
 import TotalsDisplay from "./components/totals-display";
 
 const NovaReserva = () => {
@@ -29,6 +29,7 @@ const NovaReserva = () => {
   const [waModalOpen, setWaModalOpen] = useState(false);
   const [waMessage, setWaMessage] = useState("");
   const [waNumber, setWaNumber] = useState("");
+  const today = new Date().toISOString().split("T")[0];
 
   const {
     register,
@@ -43,7 +44,7 @@ const NovaReserva = () => {
       code: genCode(),
       contractor_name: "",
       embark_place: "",
-      date: "",
+      date: today,
       entry_value_str: "0,00",
       entry_value: 0,
       total_items_net: 0,
@@ -134,35 +135,47 @@ const NovaReserva = () => {
     setValue("code", genCode());
   }, [selectedOperatorId, fetchPricebooks, setValue]);
 
-  const generateWhatsAppMessage = (data: ReservationFormValues) => {
-    const passengers = data.passengers
-      .map((p) => `- ${p.name} (${p.phone})${p.is_infant ? " [Bebê]" : ""}`)
-      .join("\n");
+const generateWhatsAppMessage = (data: ReservationFormValues) => {
+  // Função auxiliar para formatar valores em BRL
+  const formatCurrencyBRL = (value: number) =>
+    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 
-    const items = data.items
-      .map((i) => `- ${i.name} (${i.quantity} x ${i.net})`)
-      .join("\n");
+  // Função auxiliar para formatar datas no padrão brasileiro
+  const formatDateBR = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("pt-BR");
+  };
 
-    const message = `
+  // Lista de passageiros
+  const passengersList = data.passengers
+    .map((p) => `- ${p.name} (${p.phone})${p.is_infant ? " [Bebê]" : ""}`)
+    .join("\n");
+
+  // Lista de itens com quantidade, valor e data do item
+  const itemsList = data.items
+    .map((i) => `- ${i.name} (${i.quantity} x ${formatCurrencyBRL(i.net)}) - ${formatDateBR(i.date)}`)
+    .join("\n");
+
+  const message = `
 Nova Reserva:
 Código: ${data.code}
-Contratante: ${data.contractor_name}
 Embarque: ${data.embark_place}
-Data: ${data.date}
+Data: ${formatDateBR(data.date)}
 
 Passageiros:
-${passengers}
+${passengersList}
 
 Itens:
-${items}
+${itemsList}
 
-Total: ${data.total_items_net}
-Entrada: ${data.entry_value}
-Restante: ${data.remaining}
-    `;
+Total: ${formatCurrencyBRL(data.total_items_net)}
+Entrada: ${formatCurrencyBRL(data.entry_value)}
+Restante: ${formatCurrencyBRL(data.remaining)}
+  `;
 
-    return encodeURIComponent(message);
-  };
+  return encodeURIComponent(message);
+};
+
 
   const onSubmit = async (data: ReservationFormValues) => {
     try {
@@ -229,7 +242,6 @@ Restante: ${data.remaining}
         description: "Escolha como enviar a mensagem pelo WhatsApp.",
       });
 
-      // Pegar número do operador
       const operator = operators.find((op) => op.id === data.operator_id);
 
       if (!operator?.whatsapp) {

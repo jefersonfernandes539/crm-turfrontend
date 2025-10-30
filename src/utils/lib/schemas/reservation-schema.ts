@@ -14,8 +14,8 @@ export const reservationItemSchema = z.object({
 
 export const passengerSchema = z.object({
   id: z.string().optional(),
-  name: z.string().min(1, "Nome obrigatório"),
-  phone: z.string().optional(),
+  name: z.string().nullable(),
+  phone: z.string().nullable(),
   is_infant: z.boolean(),
 });
 
@@ -31,8 +31,7 @@ export const reservationSchema = z.object({
   operator_id: z.string().uuid("Operadora obrigatória"),
   seller_id: z.string().uuid("Vendedor obrigatório"),
   passengers: z
-    .array(passengerSchema)
-    .nonempty("Adicione pelo menos 1 passageiro"),
+    .array(passengerSchema),
   items: z.array(reservationItemSchema).nonempty("Adicione pelo menos 1 item"),
 });
 

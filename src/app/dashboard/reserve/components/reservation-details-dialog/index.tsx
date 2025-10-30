@@ -104,7 +104,7 @@ export function ReservationDetailsDialog({
       setLoading(false);
     }
   }, [reservationId]);
-
+console.log(reservation?.items);
   // ✅ Agora o useEffect pode usar a função sem erro
   useEffect(() => {
     if (open && reservationId) fetchReservationDetails();

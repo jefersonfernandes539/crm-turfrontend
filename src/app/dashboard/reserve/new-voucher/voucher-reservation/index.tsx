@@ -115,14 +115,14 @@ export function FormResevation({
             <div>
               <Label>Nome</Label>
               <Input
-                value={p.name}
+                value={p.name ?? ""}
                 onChange={(e) => handleChange(e, "passengers", idx, "name")}
               />
             </div>
             <div>
               <Label>Telefone</Label>
               <Input
-                value={p.phone}
+                value={p.phone ?? ""}
                 onChange={(e) => handleChange(e, "passengers", idx, "phone")}
               />
             </div>

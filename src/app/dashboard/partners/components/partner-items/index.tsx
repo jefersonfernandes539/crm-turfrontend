@@ -1,24 +1,24 @@
-import React, { useRef } from "react";
-import { motion } from "framer-motion";
-import {
-  Building,
-  Hotel,
-  Camera,
-  Eye,
-  EyeOff,
-  Edit,
-  List,
-  MoreHorizontal,
-} from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
   DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
+import {
+  Building,
+  Camera,
+  Edit,
+  Eye,
+  EyeOff,
+  Hotel,
+  List,
+  MoreHorizontal,
+} from "lucide-react";
+import React, { useRef } from "react";
 import { DeletePartnerItem } from "../delete-partner";
 
 const displayName = (p: any) => p.name || `Parceiro ${p.id.slice(-4)}`;
@@ -29,7 +29,7 @@ interface PartnerItemProps {
   onDelete: (id: string) => void;
   onToggleStatus: (partner: any) => void;
   onUploadPhoto: (file: File, id: string) => void;
-  onViewPasseios: (id: string) => void;
+  onViewPasseios?: (id: string) => void;
 }
 
 export function PartnerItem({
@@ -103,6 +103,7 @@ export function PartnerItem({
         </div>
       </div>
 
+      {/* Dropdown de ações */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
@@ -114,8 +115,9 @@ export function PartnerItem({
             <MoreHorizontal className="w-4 h-4" />
           </Button>
         </DropdownMenuTrigger>
+
         <DropdownMenuContent align="end" className="w-48">
-          {partner.type === "OPERADORA" && (
+          {onViewPasseios && (
             <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation();

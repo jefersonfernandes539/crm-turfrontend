@@ -1,20 +1,9 @@
 "use client";
 
-import React, { useEffect } from "react";
-import {
-  Control,
-  UseFormRegister,
-  useFieldArray,
-  UseFormWatch,
-  UseFormSetValue,
-  FieldErrors,
-} from "react-hook-form";
-import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { ReservationFormValues } from "@/utils/lib/schemas/reservation-schema";
 import {
   Select,
   SelectContent,
@@ -22,6 +11,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ReservationFormValues } from "@/utils/lib/schemas/reservation-schema";
+import { Plus, Trash2 } from "lucide-react";
+import React, { useEffect, useMemo } from "react";
+import {
+  Control,
+  FieldErrors,
+  useFieldArray,
+  UseFormRegister,
+  UseFormSetValue,
+  UseFormWatch,
+} from "react-hook-form";
 
 interface ItemsFormProps {
   control: Control<ReservationFormValues>;
@@ -46,20 +46,19 @@ const ItemsForm: React.FC<ItemsFormProps> = ({
     name: "items",
   });
 
-  const items = watch("items");
+  const items = useMemo(() => watch("items") || [], [watch]);
 
   useEffect(() => {
     let total = 0;
-
     items.forEach((item, i) => {
-      const subtotal = item.net * item.quantity;
+      const subtotal = (item.quantity || 0) * (item.net || 0);
       setValue(`items.${i}.subtotal`, subtotal);
       total += subtotal;
     });
-
     setValue("total_items_net", total);
-    setValue("remaining", total - watch("entry_value"));
+    setValue("remaining", total - (watch("entry_value") || 0));
   }, [items, setValue, watch]);
+
 
   const handleAddItem = () => {
     append({
@@ -118,9 +117,9 @@ const ItemsForm: React.FC<ItemsFormProps> = ({
               )}
             </div>
 
-            <div>
+            <div className="col-span-full sm:col-span-2 md:col-span-2 lg:col-span-1 space-y-1">
               <Label>Data</Label>
-              <Input type="date" {...register(`items.${index}.date`)} />
+              <Input type="date" {...register(`items.${index}.date`)} className="w-full" />
             </div>
 
             <div>
@@ -128,9 +127,7 @@ const ItemsForm: React.FC<ItemsFormProps> = ({
               <Input
                 type="number"
                 min={1}
-                {...register(`items.${index}.quantity`, {
-                  valueAsNumber: true,
-                })}
+                {...register(`items.${index}.quantity`, { valueAsNumber: true })}
               />
             </div>
 
@@ -148,7 +145,7 @@ const ItemsForm: React.FC<ItemsFormProps> = ({
                 <Label>Subtotal</Label>
                 <Input
                   type="number"
-                  value={items[index]?.subtotal || 0}
+                  {...register(`items.${index}.subtotal`, { valueAsNumber: true })}
                   readOnly
                   className="bg-gray-100"
                 />
