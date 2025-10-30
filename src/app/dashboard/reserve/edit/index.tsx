@@ -1,17 +1,14 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { Loader2 } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -19,6 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { Loader2 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 
 import { ReservationFormValues } from "@/utils/lib/schemas/reservation-schema";
 import { getSellerOptions } from "@/utils/lib/sellers";
@@ -194,7 +194,7 @@ export function EditVoucherDialog({
                   <Label>Nome</Label>
                   <Input
                     className="mt-1"
-                    value={p.name}
+                    value={p.name ?? ""}
                     onChange={(e) =>
                       handlePassengerChange(idx, "name", e.target.value)
                     }
@@ -204,7 +204,7 @@ export function EditVoucherDialog({
                   <Label>Telefone</Label>
                   <Input
                     className="mt-1"
-                    value={p.phone}
+                    value={p.phone ?? ""}
                     onChange={(e) =>
                       handlePassengerChange(idx, "phone", e.target.value)
                     }
