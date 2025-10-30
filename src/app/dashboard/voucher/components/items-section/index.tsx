@@ -80,9 +80,10 @@ export function ItemsSection({
         {itemFields.map((field, index) => (
           <div
             key={field.id}
-            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-10 gap-3 p-3 border rounded-md items-start bg-background/50"
+            className="grid grid-cols-1 md:grid-cols-[4fr_2fr_2fr_2fr_auto] gap-3 p-3 border rounded-md items-end bg-background/50"
           >
-            <div className="col-span-full md:col-span-4 space-y-1">
+
+            <div className="space-y-1">
               <Label>Descrição *</Label>
               <Controller
                 name={`itens.${index}.descricao`}
@@ -120,26 +121,22 @@ export function ItemsSection({
               )}
             </div>
 
-            <div className="col-span-full sm:col-span-1 md:col-span-2 space-y-1">
+            <div className="space-y-1">
               <Label>Data</Label>
               <Input type="date" {...register(`itens.${index}.data`)} />
             </div>
 
-            <div className="col-span-full sm:col-span-1 md:col-span-1 space-y-1 pr-4">
+            <div className="space-y-1">
               <Label>Horário</Label>
-              <Input
-                type="time"
-                {...register(`itens.${index}.hora`)}
-                className="w-20"
-              />
+              <Input type="time" {...register(`itens.${index}.hora`)} />
             </div>
 
-            <div className="col-span-full md:col-span-2 space-y-1 pl-4">
+            <div className="space-y-1">
               <Label>Observações</Label>
               <Input {...register(`itens.${index}.observacoes`)} />
             </div>
 
-            <div className="col-span-full md:col-span-1 self-start mt-4">
+            <div className="flex justify-center items-end">
               <Button
                 type="button"
                 variant="ghost"

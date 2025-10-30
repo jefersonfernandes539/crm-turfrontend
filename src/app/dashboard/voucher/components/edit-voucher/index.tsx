@@ -32,6 +32,7 @@ import {
 import { gerarVoucherPDF } from "@/utils/lib/pdf/generateVoucherpdf";
 import { Toast } from "@/components";
 import { supabase } from "@/services/supabaseClient";
+import { formatCurrencyBRL } from "@/utils/lib/helpers/formatCurrency";
 
 interface EditVoucherProps {
   voucherId: string;
@@ -514,21 +515,25 @@ const EditVoucher: React.FC<EditVoucherProps> = ({ voucherId }) => {
               <FormField
                 name="restante"
                 control={form.control}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Valor Restante (R$)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        readOnly
-                        className="bg-muted"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                render={({ field }) => {
+                  const formattedRestante = formatCurrencyBRL(
+                    field.value * 100 || 0
+                  );
+
+                  return (
+                    <FormItem>
+                      <FormLabel>Valor Restante (R$)</FormLabel>
+                      <FormControl>
+                        <Input
+                          value={formattedRestante}
+                          readOnly
+                          className="bg-muted font-bold"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
               />
             </CardContent>
             <CardFooter>
