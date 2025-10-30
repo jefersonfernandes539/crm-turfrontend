@@ -8,7 +8,6 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -19,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { Controller } from "react-hook-form";
 import type { VoucherFormData, Operator } from "@/types/Voucher";
+import { Input } from "@/components";
 
 interface GeneralInfoSectionProps {
   register: any;
@@ -45,27 +45,60 @@ export function GeneralInfoSection({
       </CardHeader>
       <CardContent className="grid md:grid-cols-3 gap-4">
         <div className="space-y-1">
-          <Label>Contratante *</Label>
-          <Input
-            {...register("contratante", {
-              required: "Contratante é obrigatório",
-            })}
+          <Controller
+            name="contratante"
+            control={control}
+            rules={{ required: "Contratante é obrigatório" }}
+            render={({ field }) => (
+              <Input.Base
+                id="contratante"
+                label="Contratante"
+                isRequired
+                isInvalid={!!errors.contratante}
+                errorMessage={errors.contratante?.message as string}
+                value={field.value}
+                onChange={field.onChange}
+              />
+            )}
           />
-          {errors.contratante && (
-            <p className="text-sm text-destructive">
-              {errors.contratante.message}
-            </p>
-          )}
         </div>
 
         <div className="space-y-1">
-          <Label>Telefone</Label>
-          <Input {...register("telefone")} />
+          <Controller
+            name="telefone"
+            control={control}
+            rules={{ required: "Telefone é obrigatório" }}
+            render={({ field }) => (
+              <Input.Phone
+                id="telefone"
+                label="Telefone"
+                isRequired
+                isInvalid={!!errors.telefone}
+                errorMessage={errors.telefone?.message as string}
+                value={field.value}
+                onChange={field.onChange}
+              />
+            )}
+          />
         </div>
 
         <div className="space-y-1">
-          <Label>Local de Embarque</Label>
-          <Input {...register("embarque")} />
+          <Controller
+            name="embarque"
+            control={control}
+            rules={{ required: "Local de embarque é obrigatório" }}
+            render={({ field }) => (
+              <Input.Base
+                id="embarque"
+                label="Local de Embarque"
+                isRequired
+                isInvalid={!!errors.embarque}
+                errorMessage={errors.embarque?.message as string}
+                value={field.value}
+                onChange={field.onChange}
+              />
+            )}
+          />
         </div>
 
         <div className="space-y-1">
@@ -113,11 +146,19 @@ export function GeneralInfoSection({
         </div>
 
         <div className="space-y-1">
-          <Label>Código</Label>
-          <Input
-            readOnly
-            {...register("codigo")}
-            className="text-muted-foreground"
+          <Controller
+            name="codigo"
+            control={control}
+            render={({ field }) => (
+              <Input.Base
+                id="codigo"
+                label="Código"
+                value={field.value}
+                readOnly
+                isDisabled
+                className="text-muted-foreground"
+              />
+            )}
           />
         </div>
       </CardContent>

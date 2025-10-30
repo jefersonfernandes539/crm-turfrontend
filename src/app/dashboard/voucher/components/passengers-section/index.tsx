@@ -13,12 +13,11 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Controller } from "react-hook-form";
 import { PlusCircle, Trash2 } from "lucide-react";
 import type { VoucherFormData } from "@/types/Voucher";
+import { Input } from "@/components";
 
 interface PassengersSectionProps {
   register: any;
@@ -81,22 +80,44 @@ export function PassengersSection({
             className="flex flex-wrap items-end gap-4 p-4 border rounded-md"
           >
             <div className="md:col-span-4 space-y-1">
-              <Label>Nome *</Label>
-              <Input
-                {...register(`passageiros.${index}.nome`, {
-                  required: "Nome do passageiro é obrigatório",
-                })}
+              <Controller
+                name={`passageiros.${index}.nome`}
+                control={control}
+                rules={{ required: "Nome do passageiro é obrigatório" }}
+                render={({ field }) => (
+                  <Input.Base
+                    id={`passageiros-${index}-nome`}
+                    label="Nome"
+                    isRequired
+                    isInvalid={!!errors.passageiros?.[index]?.nome}
+                    errorMessage={
+                      errors.passageiros?.[index]?.nome?.message as string
+                    }
+                    value={field.value}
+                    onChange={field.onChange}
+                  />
+                )}
               />
-              {errors.passageiros?.[index]?.nome && (
-                <p className="text-sm text-destructive">
-                  {errors.passageiros[index].nome.message}
-                </p>
-              )}
             </div>
 
             <div className="md:col-span-2 space-y-1">
-              <Label>Telefone</Label>
-              <Input {...register(`passageiros.${index}.telefone`)} />
+              <Controller
+                name={`passageiros.${index}.telefone`}
+                control={control}
+                render={({ field }) => (
+                  <Input.Phone
+                    id={`passageiros-${index}-telefone`}
+                    label="Telefone"
+                    value={field.value}
+                    onChange={field.onChange}
+                    defaultCountry="BR"
+                    isInvalid={!!errors.passageiros?.[index]?.telefone}
+                    errorMessage={
+                      errors.passageiros?.[index]?.telefone?.message as string
+                    }
+                  />
+                )}
+              />
             </div>
 
             <div className="flex items-center space-x-2 pt-6 justify-center">

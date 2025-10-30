@@ -37,7 +37,7 @@ export const Phone: React.FC<PhoneComponentProps> = ({
         </Label>
       ) : null}
 
-      <PhoneInput disabled={isDisabled} {...rest} />
+      <PhoneInput disabled={isDisabled} defaultCountry="BR" {...rest} />
 
       {!isInvalid && helperText ? (
         <Text.Base className="text-sm font-medium ">

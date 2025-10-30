@@ -77,6 +77,7 @@ export function ItemsSection({
 
       <CardContent className="space-y-4">
         {itemFields.map((field, index) => (
+<<<<<<< HEAD
             <div
               key={field.id}
               className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-10 gap-3 p-3 border rounded-md bg-background/50"
@@ -118,9 +119,46 @@ export function ItemsSection({
                   <p className="text-sm text-destructive">
                     {errors.itens[index].descricao.message}
                   </p>
+=======
+          <div
+            key={field.id}
+            className="grid grid-cols-1 md:grid-cols-[4fr_2fr_2fr_2fr_auto] gap-3 p-3 border rounded-md items-end bg-background/50"
+          >
+
+            <div className="space-y-1">
+              <Label>Descrição *</Label>
+              <Controller
+                name={`itens.${index}.descricao`}
+                control={control}
+                rules={{ required: "Descrição do item é obrigatória" }}
+                render={({ field }) => (
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    disabled={!selectedOperatorId}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue
+                        placeholder={
+                          !selectedOperatorId
+                            ? "Selecione uma operadora"
+                            : "Selecione um passeio..."
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {pricebook.map((p) => (
+                        <SelectItem key={p.name} value={p.name}>
+                          {p.name} ({formatCurrency(p.net)})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+>>>>>>> aecc03fa56e5f9059930a3efc520b5b3a3f19660
                 )}
               </div>
 
+<<<<<<< HEAD
               <div className="col-span-full sm:col-span-1 md:col-span-2 space-y-1">
                 <Label>Data</Label>
                 <Input
@@ -156,6 +194,32 @@ export function ItemsSection({
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
+=======
+            <div className="space-y-1">
+              <Label>Data</Label>
+              <Input type="date" {...register(`itens.${index}.data`)} />
+            </div>
+
+            <div className="space-y-1">
+              <Label>Horário</Label>
+              <Input type="time" {...register(`itens.${index}.hora`)} />
+            </div>
+
+            <div className="space-y-1">
+              <Label>Observações</Label>
+              <Input {...register(`itens.${index}.observacoes`)} />
+            </div>
+
+            <div className="flex justify-center items-end">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => removeItem(index)}
+              >
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
+>>>>>>> aecc03fa56e5f9059930a3efc520b5b3a3f19660
             </div>
         ))}          
 
