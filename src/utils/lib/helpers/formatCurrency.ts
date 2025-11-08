@@ -117,20 +117,13 @@ export function formatNumber(
   }
 }
 
-export function formatDate(dateString?: string | Date | null): string {
-  if (!dateString) return "-";
-
-  const date =
-    typeof dateString === "string" ? new Date(dateString) : dateString;
-
-  if (isNaN(date.getTime())) return "-";
-
-  return date.toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
+// utils/lib/helpers/formatCurrency.ts (ou onde estiver)
+export function formatDate(date: string) {
+  if (!date) return "";
+  const [year, month, day] = date.split("-");
+  return `${day}/${month}/${year}`;
 }
+
 
 export function parseCurrency(value: string): number {
   const cleaned = value.replace(/[^\d,.-]/g, "").replace(",", ".");
@@ -164,3 +157,10 @@ export const parseCurrencyBRL = (value: string): number => {
   const numericValue = value.replace(/\D/g, "");
   return parseInt(numericValue || "0", 10); // retorna centavos
 };
+
+// utils/normalizeDate.ts
+export function normalizeDate(dateStr?: string | null): string {
+  if (!dateStr) return "";
+  // Se vier algo tipo "2025-11-16T00:00:00Z" -> fica "2025-11-16"
+  return dateStr.split("T")[0];
+}

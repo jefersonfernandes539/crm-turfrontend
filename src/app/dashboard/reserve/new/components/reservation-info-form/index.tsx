@@ -1,4 +1,5 @@
 "use client";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,6 +41,7 @@ const ReservationInfoForm: React.FC<Props> = ({
       <CardHeader>
         <CardTitle>📋 Informações da Reserva</CardTitle>
       </CardHeader>
+
       <CardContent className="space-y-4">
         <div className="space-y-1">
           <Label htmlFor="code">Código</Label>
@@ -50,6 +52,8 @@ const ReservationInfoForm: React.FC<Props> = ({
             className="bg-muted"
           />
         </div>
+
+        {/* Operadora */}
         <div className="space-y-1">
           <Label>Operadora / Pousada</Label>
           <Controller
@@ -71,9 +75,13 @@ const ReservationInfoForm: React.FC<Props> = ({
             )}
           />
           {errors.operator_id && (
-            <p className="text-sm text-destructive">{errors.operator_id.message}</p>
+            <p className="text-sm text-destructive">
+              {errors.operator_id.message}
+            </p>
           )}
         </div>
+
+        {/* Vendedor */}
         <div className="space-y-1">
           <Label>Vendedor</Label>
           <Controller
@@ -101,6 +109,7 @@ const ReservationInfoForm: React.FC<Props> = ({
           )}
         </div>
 
+        {/* Contratante */}
         <div className="space-y-1">
           <Label htmlFor="contractor_name">Nome do Contratante</Label>
           <Input id="contractor_name" {...register("contractor_name")} />
@@ -118,10 +127,14 @@ const ReservationInfoForm: React.FC<Props> = ({
 
         <div className="space-y-1">
           <Label htmlFor="date">Data</Label>
-          <Input type="date" id="date" {...register("date")} />
-          {errors.date && (
-            <p className="text-sm text-destructive">{errors.date.message}</p>
-          )}
+        <Input
+          type="date"
+          id="date"
+          {...register("date", {
+            setValueAs: (value) => value || "",
+          })}
+        />
+
         </div>
       </CardContent>
     </Card>

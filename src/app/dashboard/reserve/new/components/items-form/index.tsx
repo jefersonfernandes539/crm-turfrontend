@@ -13,9 +13,10 @@ import {
 } from "@/components/ui/select";
 import { ReservationFormValues } from "@/utils/lib/schemas/reservation-schema";
 import { Plus, Trash2 } from "lucide-react";
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect } from "react";
 import {
   Control,
+  Controller,
   FieldErrors,
   useFieldArray,
   UseFormRegister,
@@ -46,19 +47,23 @@ const ItemsForm: React.FC<ItemsFormProps> = ({
     name: "items",
   });
 
-  const items = useMemo(() => watch("items") || [], [watch]);
+  const watchedItems = watch("items") || [];
 
+  // Atualiza subtotais e totais
   useEffect(() => {
+    if (!watchedItems) return;
     let total = 0;
-    items.forEach((item, i) => {
-      const subtotal = (item.quantity || 0) * (item.net || 0);
+    watchedItems.forEach((item, i) => {
+      const quantity = item.quantity || 0;
+      const net = item.net || 0;
+      const subtotal = quantity * net;
+
       setValue(`items.${i}.subtotal`, subtotal);
       total += subtotal;
     });
     setValue("total_items_net", total);
     setValue("remaining", total - (watch("entry_value") || 0));
-  }, [items, setValue, watch]);
-
+  }, [watchedItems, setValue, watch]);
 
   const handleAddItem = () => {
     append({
@@ -93,23 +98,33 @@ const ItemsForm: React.FC<ItemsFormProps> = ({
             key={field.id}
             className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end border-b pb-4"
           >
+            {/* SELECT DO ITEM */}
             <div className="md:col-span-2">
               <Label>Item</Label>
-              <Select
-                onValueChange={(value) => handleSelectPricebook(index, value)}
-                value={items[index]?.pricebook_id || ""}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o item" />
-                </SelectTrigger>
-                <SelectContent>
-                  {pricebooks.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Controller
+                control={control}
+                name={`items.${index}.pricebook_id`}
+                render={({ field }) => (
+                  <Select
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      handleSelectPricebook(index, value);
+                    }}
+                    value={field.value || ""}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o item" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {pricebooks.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.items?.[index]?.name && (
                 <p className="text-red-500 text-sm mt-1">
                   {errors.items[index]?.name?.message as string}
@@ -117,11 +132,13 @@ const ItemsForm: React.FC<ItemsFormProps> = ({
               )}
             </div>
 
+            {/* DATA */}
             <div className="col-span-full sm:col-span-2 md:col-span-2 lg:col-span-1 space-y-1">
               <Label>Data</Label>
-              <Input type="date" {...register(`items.${index}.date`)} className="w-full" />
+              <Input type="date" {...register(`items.${index}.date`)} />
             </div>
 
+            {/* QUANTIDADE */}
             <div>
               <Label>Qtd</Label>
               <Input
@@ -131,6 +148,7 @@ const ItemsForm: React.FC<ItemsFormProps> = ({
               />
             </div>
 
+            {/* NET */}
             <div>
               <Label>Net</Label>
               <Input
@@ -140,6 +158,7 @@ const ItemsForm: React.FC<ItemsFormProps> = ({
               />
             </div>
 
+            {/* SUBTOTAL + BOTÃO REMOVER */}
             <div className="flex justify-center items-center">
               <div>
                 <Label>Subtotal</Label>
