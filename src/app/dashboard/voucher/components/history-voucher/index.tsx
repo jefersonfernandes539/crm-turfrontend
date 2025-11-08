@@ -1,40 +1,27 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import dayjs from "dayjs";
-import {
-  Loader2,
-  Download,
-  Edit,
-  Trash2,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Edit, Loader2, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
+import { Toast } from "@/components";
 import {
   AlertDialog,
-  AlertDialogTrigger,
+  AlertDialogAction,
+  AlertDialogCancel,
   AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
   AlertDialogDescription,
   AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { supabase } from "@/services/supabaseClient";
+import { VoucherPayload } from "@/types/Voucher";
 import { gerarVoucherPDF } from "@/utils/lib/pdf/generateVoucherpdf";
-import { Toast } from "@/components";
 
 type Voucher = {
   id: string;
@@ -42,6 +29,10 @@ type Voucher = {
   codigo: string;
   issued_at: string;
   payload: any;
+  vendedor_id?: string;
+  valor_total_centavos?: number;
+  entrada_centavos?: number;
+  restante_centavos?: number;
 };
 
 export function VoucherHistory() {
@@ -61,36 +52,69 @@ export function VoucherHistory() {
 
     const { data, error, count } = await supabase
       .from("vouchers")
-      .select("id, cliente_nome, codigo, issued_at, payload", {
-        count: "exact",
-      })
+      .select(
+        `
+        id,
+        cliente_nome,
+        codigo,
+        issued_at,
+        payload,
+        vendedor_id,
+        valor_total_centavos,
+        entrada_centavos,
+        restante_centavos
+      `,
+        { count: "exact" }
+      )
       .order("issued_at", { ascending: false })
       .range(from, to);
 
     if (error) {
       Toast.Base({
-        title: "Erro ao buscar voucher!",
-        description: "Voucher não encontrado.",
+        title: "Erro ao buscar vouchers",
+        description: error.message,
         variant: "error",
       });
-    } else {
-      setVouchers(data || []);
-      setTotalCount(count || 0);
+      setLoading(false);
+      return;
     }
 
+    // Buscar nomes dos vendedores em batch
+    const vendedorIds = Array.from(new Set(data?.map((v) => v.vendedor_id).filter(Boolean)));
+    let vendedoresMap: Record<string, string> = {};
+    if (vendedorIds.length) {
+      const { data: sellers } = await supabase
+        .from("sellers")
+        .select("id, name")
+        .in("id", vendedorIds);
+
+      if (sellers) {
+        vendedoresMap = Object.fromEntries(sellers.map((s) => [s.id, s.name]));
+      }
+    }
+
+    const formatted = (data || []).map((v) => ({
+      ...v,
+      vendedor: v.vendedor_id ? vendedoresMap[v.vendedor_id] || "—" : "—",
+      total: v.valor_total_centavos ? v.valor_total_centavos / 100 : 0,
+      entrada: v.entrada_centavos ? v.entrada_centavos / 100 : 0,
+      restante: v.restante_centavos ? v.restante_centavos / 100 : 0,
+    }));
+
+    setVouchers(formatted);
+    setTotalCount(count || 0);
     setLoading(false);
   }, [page, pageSize]);
 
   useEffect(() => {
-    fetchVouchers();
+    const fetchData = async () => {
+      await fetchVouchers();
+    };
+    fetchData();
 
     const channel = supabase
       .channel("vouchers-changes")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "vouchers" },
-        fetchVouchers
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "vouchers" }, fetchVouchers)
       .subscribe();
 
     return () => {
@@ -100,21 +124,18 @@ export function VoucherHistory() {
 
   const handleDelete = async (voucherId: string) => {
     await supabase.from("voucher_itens").delete().eq("voucher_id", voucherId);
-    const { error } = await supabase
-      .from("vouchers")
-      .delete()
-      .eq("id", voucherId);
+    const { error } = await supabase.from("vouchers").delete().eq("id", voucherId);
 
     if (error) {
       Toast.Base({
         title: "Erro ao deletar voucher!",
-        description: "Voucher não deletado.",
+        description: error.message,
         variant: "error",
       });
     } else {
       Toast.Base({
-        title: "Sucesso ao deletar voucher!",
-        description: "Voucher deletado.",
+        title: "Voucher deletado!",
+        description: "Operação realizada com sucesso.",
         variant: "success",
       });
       fetchVouchers();
@@ -125,34 +146,31 @@ export function VoucherHistory() {
     if (!voucher.payload) {
       Toast.Base({
         title: "Dados incompletos",
-        description:
-          "Não é possível gerar o PDF sem os dados completos do voucher.",
+        description: "Não é possível gerar o PDF sem os dados completos do voucher.",
         variant: "error",
       });
       return;
     }
 
-    const payload =
-      "contractor_name" in voucher.payload
-        ? {
-            codigo: voucher.payload.code,
-            contratante: voucher.payload.contractor_name,
-            itens: (voucher.payload.items || []).map((i: any) => ({
-              descricao: i.name,
-              data: i.date,
-              hora: i.time || "",
-            })),
-            passageiros: (voucher.payload.passengers || []).map((p: any) => ({
-              nome: p.name,
-              telefone: p.phone || "",
-              colo: p.is_infant || false,
-            })),
-            total: voucher.payload.total_items_net || 0,
-            entrada: voucher.payload.entry_value || 0,
-            restante: voucher.payload.remaining || 0,
-            observacoes: voucher.payload.obs || "",
-          }
-        : voucher.payload;
+    const payload: VoucherPayload = { ...voucher.payload };
+
+    // Buscar vendedor se não existir
+    if (!payload.vendedor && voucher.vendedor_id) {
+      const { data: seller } = await supabase
+        .from("sellers")
+        .select("name")
+        .eq("id", voucher.vendedor_id)
+        .maybeSingle();
+
+      payload.vendedor = seller?.name || "—";
+    } else {
+      payload.vendedor = payload.vendedor || "—";
+    }
+
+    // Preencher valores se não existirem
+    payload.total = payload.total ?? (voucher.valor_total_centavos ? voucher.valor_total_centavos / 100 : 0);
+    payload.entrada = payload.entrada ?? (voucher.entrada_centavos ? voucher.entrada_centavos / 100 : 0);
+    payload.restante = payload.restante ?? (voucher.restante_centavos ? voucher.restante_centavos / 100 : 0);
 
     try {
       await gerarVoucherPDF(payload);
@@ -161,12 +179,11 @@ export function VoucherHistory() {
         description: "O download do PDF começará em breve.",
         variant: "success",
       });
-    } catch (error) {
-      console.error("Erro ao gerar PDF:", error);
+    } catch (err) {
+      console.error(err);
       Toast.Base({
-        title: "Erro ao gerar voucher",
-        description:
-          "Ocorreu um problema ao tentar gerar o PDF. Verifique o console.",
+        title: "Erro ao gerar PDF",
+        description: "Ocorreu um problema ao tentar gerar o PDF.",
         variant: "error",
       });
     }
@@ -204,28 +221,16 @@ export function VoucherHistory() {
             {vouchers.length > 0 ? (
               vouchers.map((voucher) => (
                 <TableRow key={voucher.id} className="group hover:bg-muted">
-                  <TableCell className="whitespace-nowrap">
-                    {voucher.cliente_nome}
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap">
-                    {voucher.codigo}
-                  </TableCell>
+                  <TableCell className="whitespace-nowrap">{voucher.cliente_nome}</TableCell>
+                  <TableCell className="whitespace-nowrap">{voucher.codigo}</TableCell>
                   <TableCell className="whitespace-nowrap">
                     {dayjs(voucher.issued_at).format("DD/MM/YYYY HH:mm")}
                   </TableCell>
                   <TableCell className="text-right flex justify-end space-x-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDownload(voucher)}
-                    >
+                    <Button variant="ghost" size="icon" onClick={() => handleDownload(voucher)}>
                       <Download className="h-4 w-4" />
                     </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleEdit(voucher.id)}
-                    >
+                    <Button variant="ghost" size="icon" onClick={() => handleEdit(voucher.id)}>
                       <Edit className="h-4 w-4" />
                     </Button>
 
@@ -237,15 +242,10 @@ export function VoucherHistory() {
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>
-                            Confirmar exclusão
-                          </AlertDialogTitle>
+                          <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
                           <AlertDialogDescription>
                             Tem certeza que deseja excluir o voucher de{" "}
-                            <span className="font-medium">
-                              {voucher.cliente_nome}
-                            </span>
-                            ? Esta ação não pode ser desfeita.
+                            <span className="font-medium">{voucher.cliente_nome}</span>? Esta ação não pode ser desfeita.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
