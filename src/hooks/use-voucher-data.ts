@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { Operator, PricebookItem } from "@/types/Voucher";
-import { supabase } from "@/services/supabaseClient";
+import { db } from "@/services/db";
 import eventBus from "@/utils/lib/helpers/eventBus";
 import { Toast } from "@/components";
 
@@ -18,7 +18,7 @@ export function useVoucherData() {
         return;
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("pricebook")
         .select("name, net")
         .eq("partner_id", operatorId);
@@ -40,7 +40,7 @@ export function useVoucherData() {
   useEffect(() => {
     const fetchInitialData = async () => {
       // Fetch operators
-      const { data: opData, error: opError } = await supabase
+      const { data: opData, error: opError } = await db
         .from("operators")
         .select("id, name")
         .eq("active", true)
@@ -49,7 +49,7 @@ export function useVoucherData() {
       if (!opError) setOperators(opData || []);
 
       // Fetch sellers
-      const { data: sellersData, error: sellersError } = await supabase
+      const { data: sellersData, error: sellersError } = await db
         .from("sellers")
         .select("name")
         .eq("active", true)

@@ -1,4 +1,4 @@
-import { supabase } from "@/services/supabaseClient";
+import { db } from "@/services/db";
 
 interface VoucherPayload {
   codigo: string;
@@ -22,7 +22,7 @@ export async function duplicateVoucherWithItems(
 ) {
   try {
     // 1️⃣ Criar novo voucher
-    const { data: newVoucher, error: voucherError } = await supabase
+    const { data: newVoucher, error: voucherError } = await db
       .from("vouchers")
       .insert(newVoucherData)
       .select()
@@ -33,7 +33,7 @@ export async function duplicateVoucherWithItems(
     const newVoucherId = newVoucher.id;
 
     // 2️⃣ Pegar itens do voucher original
-    const { data: originalItems, error: itemsError } = await supabase
+    const { data: originalItems, error: itemsError } = await db
       .from("voucher_itens")
       .select("*")
       .eq("voucher_id", originalVoucherId);
@@ -51,7 +51,7 @@ export async function duplicateVoucherWithItems(
     }));
 
     if (newItems.length > 0) {
-      const { error: insertItemsError } = await supabase
+      const { error: insertItemsError } = await db
         .from("voucher_itens")
         .insert(newItems);
 

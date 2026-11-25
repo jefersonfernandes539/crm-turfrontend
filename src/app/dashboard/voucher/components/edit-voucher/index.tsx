@@ -31,7 +31,7 @@ import {
 } from "@/utils/lib/schemas/voucher-schema";
 import { gerarVoucherPDF } from "@/utils/lib/pdf/generateVoucherpdf";
 import { Toast } from "@/components";
-import { supabase } from "@/services/supabaseClient";
+import { db } from "@/services/db";
 import { formatCurrencyBRL } from "@/utils/lib/helpers/formatCurrency";
 
 interface EditVoucherProps {
@@ -84,7 +84,7 @@ const EditVoucher: React.FC<EditVoucherProps> = ({ voucherId }) => {
 
     const fetchVoucher = async () => {
       try {
-        const { data, error } = await supabase
+        const { data, error } = await db
           .from("vouchers")
           .select("*")
           .eq("id", voucherId)
@@ -94,7 +94,7 @@ const EditVoucher: React.FC<EditVoucherProps> = ({ voucherId }) => {
 
         let vendedorNome = data.seller_name || data.operator_name || "";
         if (!vendedorNome && data.seller_id) {
-          const { data: sellerData } = await supabase
+          const { data: sellerData } = await db
             .from("sellers")
             .select("name")
             .eq("id", data.seller_id)
@@ -161,7 +161,7 @@ const EditVoucher: React.FC<EditVoucherProps> = ({ voucherId }) => {
     setIsSaving(true);
     try {
       const values = form.getValues();
-      const { error } = await supabase
+      const { error } = await db
         .from("vouchers")
         .update({
           seller_name: values.vendedor,

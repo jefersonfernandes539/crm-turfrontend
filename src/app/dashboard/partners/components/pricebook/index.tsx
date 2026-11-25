@@ -31,7 +31,7 @@ import { Loader2, Plus, Edit, Trash2, ArrowLeft } from "lucide-react";
 import { Toast } from "@/components";
 import eventBus from "@/utils/lib/helpers/eventBus";
 import { formatCurrency } from "@/utils/lib/helpers/formatCurrency";
-import { supabase } from "@/services/supabaseClient";
+import { db } from "@/services/db";
 import { useRouter } from "next/navigation";
 
 interface PricebookItem {
@@ -71,7 +71,7 @@ const Pricebook: React.FC<PricebookProps> = ({ partnerId }) => {
     setLoading(true);
 
     try {
-      const { data: partnerData } = await supabase
+      const { data: partnerData } = await db
         .from("operators")
         .select("id, name")
         .eq("id", partnerId)
@@ -79,7 +79,7 @@ const Pricebook: React.FC<PricebookProps> = ({ partnerId }) => {
 
       setPartner(partnerData);
 
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("pricebook")
         .select("*")
         .eq("partner_id", partnerId)
@@ -137,12 +137,12 @@ const Pricebook: React.FC<PricebookProps> = ({ partnerId }) => {
     let error;
 
     if (editingItem) {
-      ({ error } = await supabase
+      ({ error } = await db
         .from("pricebook")
         .update(dataToSave)
         .eq("id", editingItem.id));
     } else {
-      ({ error } = await supabase.from("pricebook").insert(dataToSave));
+      ({ error } = await db.from("pricebook").insert(dataToSave));
     }
 
     if (error) {
@@ -168,7 +168,7 @@ const Pricebook: React.FC<PricebookProps> = ({ partnerId }) => {
   const handleDelete = async (itemId: string) => {
     if (!window.confirm("Tem certeza que deseja excluir este item?")) return;
 
-    const { error } = await supabase
+    const { error } = await db
       .from("pricebook")
       .delete()
       .eq("id", itemId);

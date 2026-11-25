@@ -13,7 +13,7 @@ import { PassengersSection } from "../../../voucher/components/passengers-sectio
 import { FormActions } from "../../../voucher/components/form-actions";
 
 import { VoucherFormData } from "@/types/Voucher";
-import { supabase } from "@/services/supabaseClient";
+import { db } from "@/services/db";
 import {
   createDemoVoucherData,
   generateUniqueCode,
@@ -137,7 +137,7 @@ export function VoucherForm({ initialData, voucherId }: VoucherFormProps) {
     try {
       let savedHeader;
       if (voucherId) {
-        const { data, error } = await supabase
+        const { data, error } = await db
           .from("vouchers")
           .update(voucherHeader)
           .eq("id", voucherId)
@@ -146,7 +146,7 @@ export function VoucherForm({ initialData, voucherId }: VoucherFormProps) {
         if (error) throw error;
         savedHeader = data;
       } else {
-        const { data, error } = await supabase
+        const { data, error } = await db
           .from("vouchers")
           .insert(voucherHeader)
           .select()
@@ -157,7 +157,7 @@ export function VoucherForm({ initialData, voucherId }: VoucherFormProps) {
 
       const currentVoucherId = savedHeader.id;
 
-      await supabase
+      await db
         .from("voucher_itens")
         .delete()
         .eq("voucher_id", currentVoucherId);
@@ -171,7 +171,7 @@ export function VoucherForm({ initialData, voucherId }: VoucherFormProps) {
         }));
 
       if (itemsToSave.length > 0) {
-        const { error: itemsError } = await supabase
+        const { error: itemsError } = await db
           .from("voucher_itens")
           .insert(itemsToSave);
         if (itemsError) throw itemsError;

@@ -17,7 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import OperadoraForm, { PartnerFormData } from "../new-partner";
 import { useDebounce } from "@/hooks/useDebounce";
 import { PartnerItem } from "../partner-items";
-import { supabase } from "@/services/supabaseClient";
+import { db } from "@/services/db";
 import { Toast } from "@/components";
 import { useRouter } from "next/navigation";
 import { StatsCard } from "../stats-card";
@@ -58,7 +58,7 @@ export default function Operators() {
   const fetchPartners = useCallback(async (tab: "OPERADORA" | "POUSADA") => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("operators")
         .select("*")
         .eq("type", tab)
@@ -86,18 +86,18 @@ export default function Operators() {
         { count: totalPartners },
         { count: tourPricebooks },
       ] = await Promise.all([
-        supabase
+        db
           .from("operators")
           .select("*", { count: "exact", head: true })
           .eq("type", "OPERADORA")
           .eq("active", true),
-        supabase
+        db
           .from("operators")
           .select("*", { count: "exact", head: true })
           .eq("type", "POUSADA")
           .eq("active", true),
-        supabase.from("operators").select("*", { count: "exact", head: true }),
-        supabase.from("pricebook").select("*", { count: "exact", head: true }),
+        db.from("operators").select("*", { count: "exact", head: true }),
+        db.from("pricebook").select("*", { count: "exact", head: true }),
       ]);
 
       setStats({
@@ -127,12 +127,12 @@ export default function Operators() {
   const handleFormSubmit = async (formData: PartnerFormData) => {
     let error;
     if (editingOperator) {
-      ({ error } = await supabase
+      ({ error } = await db
         .from("operators")
         .update(formData)
         .eq("id", (editingOperator as any).id));
     } else {
-      ({ error } = await supabase.from("operators").insert([formData]));
+      ({ error } = await db.from("operators").insert([formData]));
     }
 
     if (error) {
@@ -161,7 +161,7 @@ export default function Operators() {
   };
 
   const handleDelete = async (id: string) => {
-    const { error } = await supabase.from("operators").delete().eq("id", id);
+    const { error } = await db.from("operators").delete().eq("id", id);
     if (error) {
       Toast.Base({
         title: "Erro ao excluir",
@@ -180,7 +180,7 @@ export default function Operators() {
   };
 
   const handleToggleStatus = async (operator: any) => {
-    const { error } = await supabase
+    const { error } = await db
       .from("operators")
       .update({ active: !operator.active })
       .eq("id", operator.id);
@@ -207,7 +207,7 @@ export default function Operators() {
       );
       const photo_url = await uploadPartnerPhoto(file, partnerId);
 
-      const { error } = await supabase
+      const { error } = await db
         .from("operators")
         .update({ photo_url })
         .eq("id", partnerId);

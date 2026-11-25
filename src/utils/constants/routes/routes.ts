@@ -11,7 +11,8 @@ export type AUTH_PATHS_KEY =
   | "reports"
   | "reserve"
   | "sellers"
-  | "voucher";
+  | "voucher"
+  | "lodging";
 
 type Routes = {
   public: {
@@ -58,6 +59,10 @@ export const routes: Routes = {
     },
     reports: {
       path: `${PREFIX.DASHBOARD}/reports`,
+      permittedRoles: getAllRoles().ids,
+    },
+    lodging: {
+      path: `${PREFIX.DASHBOARD}/lodging`,
       permittedRoles: getAllRoles().ids,
     },
   },

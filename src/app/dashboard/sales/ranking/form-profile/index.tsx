@@ -23,7 +23,7 @@ import {
   Camera,
   ArrowLeft,
 } from "lucide-react";
-import { supabase } from "@/services/supabaseClient";
+import { db } from "@/services/db";
 import { Toast } from "@/components";
 import { inPer } from "@/utils/lib/xlsx-utils";
 import { getSellerOptions } from "@/utils/lib/sellers";
@@ -79,7 +79,7 @@ const SellerProfile: React.FC<SellerProfileProps> = ({ slug }) => {
   const findSellerBySlug = useCallback(async (sellerName: string) => {
     if (!sellerName) return null;
 
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("sellers")
       .select("*")
       .eq("name", sellerName)
@@ -95,7 +95,7 @@ const SellerProfile: React.FC<SellerProfileProps> = ({ slug }) => {
     }
     if (data) return data;
 
-    const { data: newSeller, error: upsertError } = await supabase
+    const { data: newSeller, error: upsertError } = await db
       .from("sellers")
       .upsert({ name: sellerName, active: true }, { onConflict: "name" })
       .select()
@@ -140,7 +140,7 @@ const SellerProfile: React.FC<SellerProfileProps> = ({ slug }) => {
   const fetchSales = useCallback(async () => {
     if (!user) return [];
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("spreadsheet_sales")
       .select("*")
       .eq("user_id", user.id);
@@ -200,7 +200,7 @@ const SellerProfile: React.FC<SellerProfileProps> = ({ slug }) => {
     const fileName = `${sellerData.id}-${Date.now()}.${fileExt}`;
     const filePath = `sellers/${fileName}`;
 
-    const { error: uploadError } = await supabase.storage
+    const { error: uploadError } = await db.storage
       .from("vouchers")
       .upload(filePath, file);
     if (uploadError) {
@@ -213,10 +213,10 @@ const SellerProfile: React.FC<SellerProfileProps> = ({ slug }) => {
       return;
     }
 
-    const { data: { publicUrl } = { publicUrl: "" } } = supabase.storage
+    const { data: { publicUrl } = { publicUrl: "" } } = db.storage
       .from("vouchers")
       .getPublicUrl(filePath);
-    const { error: updateError } = await supabase
+    const { error: updateError } = await db
       .from("sellers")
       .update({ photo_url: publicUrl })
       .eq("id", sellerData.id);
@@ -245,7 +245,7 @@ const SellerProfile: React.FC<SellerProfileProps> = ({ slug }) => {
 
   const handleSaveSale = async (updatedSale: any) => {
     const { id, ...saleToUpdate } = updatedSale;
-    const { error } = await supabase
+    const { error } = await db
       .from("spreadsheet_sales")
       .update(saleToUpdate)
       .eq("id", id);
@@ -270,7 +270,7 @@ const SellerProfile: React.FC<SellerProfileProps> = ({ slug }) => {
   };
 
   const handleDeleteSale = async (saleToDelete: any) => {
-    const { error } = await supabase
+    const { error } = await db
       .from("spreadsheet_sales")
       .delete()
       .eq("id", saleToDelete.id);

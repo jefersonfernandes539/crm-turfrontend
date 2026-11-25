@@ -1,6 +1,6 @@
 const KEY = "btjr_logo_v3";
 const LOGO_URL =
-  "https://aobmttppcusilrxsrcbp.supabase.co/storage/v1/object/public/vouchers/logo/logo%2001.png";
+  "/logo.png";
 
 const toDataURL = (b: Blob): Promise<string> =>
   new Promise((res, rej) => {
@@ -10,7 +10,7 @@ const toDataURL = (b: Blob): Promise<string> =>
     reader.readAsDataURL(b);
   });
 
-async function fromSupabasePublic(): Promise<string | null> {
+async function fromPublicUrl(): Promise<string | null> {
   try {
     const response = await fetch(LOGO_URL);
     if (!response.ok) {
@@ -33,7 +33,7 @@ export async function getBrandLogo(): Promise<string | null> {
     const cached = localStorage.getItem(KEY);
     if (cached) return cached;
 
-    const dataUrl = await fromSupabasePublic();
+    const dataUrl = await fromPublicUrl();
     if (dataUrl) localStorage.setItem(KEY, dataUrl);
 
     return dataUrl;

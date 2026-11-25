@@ -13,7 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Trash2 } from "lucide-react";
 
-import { supabase } from "@/services/supabaseClient";
+import { db } from "@/services/db";
 import { Toast } from "@/components";
 import { formatDate } from "@/utils/lib/helpers/formatCurrency";
 import { ReservationFormValues } from "@/utils/lib/schemas/reservation-schema";
@@ -43,7 +43,7 @@ export function ReservationDetailsDialog({
     setLoading(true);
 
     try {
-      const { data: reservationData, error: resError } = await supabase
+      const { data: reservationData, error: resError } = await db
         .from("reservations")
         .select("*")
         .eq("id", reservationId)
@@ -52,12 +52,12 @@ export function ReservationDetailsDialog({
       if (resError) throw resError;
       if (!reservationData) throw new Error("Reserva não encontrada");
 
-      const { data: itemsData } = await supabase
+      const { data: itemsData } = await db
         .from("reservation_items")
         .select("*")
         .eq("reservation_id", reservationId);
 
-      const { data: passengersData } = await supabase
+      const { data: passengersData } = await db
         .from("passengers")
         .select("*")
         .eq("reservation_id", reservationId);
@@ -121,7 +121,7 @@ console.log(reservation?.items);
   const handleSaveEdit = async (updatedData: ReservationFormValues) => {
     try {
       setIsSaving(true);
-      await supabase
+      await db
         .from("reservations")
         .update({
           contractor_name: updatedData.contractor_name,

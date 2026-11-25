@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { supabase } from "@/services/supabaseClient";
+import { db } from "@/services/db";
 import { formatCurrency } from "@/utils/lib/helpers/formatCurrency";
 import { DashboardStats, DateRange } from "@/types/Dashboard";
 import { rank } from "@/utils/lib/xlsx-utils";
@@ -26,7 +26,7 @@ export const useDashboardData = (dateRange: DateRange) => {
     setError(null);
 
     try {
-      const { data: salesData, error: salesError } = await supabase
+      const { data: salesData, error: salesError } = await db
         .from("spreadsheet_sales")
         .select("*");
 
@@ -54,7 +54,7 @@ export const useDashboardData = (dateRange: DateRange) => {
       const topSeller = ranking.length > 0 ? ranking[0].vendedor : "—";
 
       const { data: reservationsData, error: reservationsError } =
-        await supabase
+        await db
           .from("reservations")
           .select("*, operators(name), sellers(name)");
 
@@ -108,7 +108,7 @@ export const useDashboardData = (dateRange: DateRange) => {
   useEffect(() => {
     fetchData();
 
-    const salesChannel = supabase
+    const salesChannel = db
       .channel("sales-live-home")
       .on(
         "postgres_changes",
@@ -117,7 +117,7 @@ export const useDashboardData = (dateRange: DateRange) => {
       )
       .subscribe();
 
-    const reservationsChannel = supabase
+    const reservationsChannel = db
       .channel("reservations-live-home")
       .on(
         "postgres_changes",
@@ -127,8 +127,8 @@ export const useDashboardData = (dateRange: DateRange) => {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(salesChannel);
-      supabase.removeChannel(reservationsChannel);
+      db.removeChannel(salesChannel);
+      db.removeChannel(reservationsChannel);
     };
   }, [fetchData]);
 

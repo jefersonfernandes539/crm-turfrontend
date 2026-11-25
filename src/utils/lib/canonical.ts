@@ -1,4 +1,4 @@
-import { supabase } from "@/services/supabaseClient";
+import { db } from "@/services/db";
 
 export const BASE_SELLERS = [
   "Welisson",
@@ -42,7 +42,7 @@ export const canonical = (
 };
 
 export const getSellerOptions = async (): Promise<string[]> => {
-  const { data, error } = await supabase
+  const { data, error } = await db
     .from("sellers")
     .select("name")
     .eq("active", true);

@@ -78,7 +78,7 @@ export default function LoginForm() {
 
       <div className="flex flex-col py-6 w-full md:min-w-60">
         <CardHeader className="mb-4">
-          <CardTitle className="text-xl">Bem-vindo Beach Tur</CardTitle>
+          <CardTitle className="text-xl">Bem-vindo ao TurHost CRM</CardTitle>
           <CardDescription className="text-xs text-[#f8b00e] transition-colors duration-200">
             Informe seu e-mail e senha para acessar sua conta
           </CardDescription>
