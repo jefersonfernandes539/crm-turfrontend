@@ -1,4 +1,4 @@
-import { supabase } from "@/services/supabaseClient";
+import { db } from "@/services/db";
 
 /**
  * Verifica se a string é uma URL completa.
@@ -46,7 +46,7 @@ export async function loadStorageImage(
         reader.readAsDataURL(data);
       });
     } else {
-      const { data, error } = await supabase.storage
+      const { data, error } = await db.storage
         .from("vouchers")
         .download(path);
 
@@ -87,7 +87,7 @@ export async function uploadPartnerPhoto(
   const fileName = `${partnerId}-${Date.now()}.${fileExt}`;
   const filePath = `partners/${fileName}`;
 
-  const { error: uploadError } = await supabase.storage
+  const { error: uploadError } = await db.storage
     .from("vouchers")
     .upload(filePath, file);
 
@@ -95,7 +95,7 @@ export async function uploadPartnerPhoto(
     throw uploadError;
   }
 
-  const { data } = supabase.storage.from("vouchers").getPublicUrl(filePath);
+  const { data } = db.storage.from("vouchers").getPublicUrl(filePath);
 
   if (!data || !data.publicUrl) {
     throw new Error("Não foi possível obter a URL pública da imagem.");

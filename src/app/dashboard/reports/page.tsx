@@ -28,7 +28,7 @@ import {
   Legend,
 } from "chart.js";
 import { Bar } from "react-chartjs-2";
-import { supabase } from "@/services/supabaseClient";
+import { db } from "@/services/db";
 import { formatCurrency } from "@/utils/lib/helpers/formatCurrency";
 import { Toast } from "@/components";
 
@@ -68,7 +68,7 @@ const ReportsPage = () => {
 
   const fetchOperators = useCallback(async () => {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("operators")
         .select("id, name")
         .order("name");
@@ -93,7 +93,7 @@ const ReportsPage = () => {
 
     setLoading(true);
     try {
-      const { data: reservationsData, error } = await supabase
+      const { data: reservationsData, error } = await db
         .from("reservations")
         .select("id, reservation_items(subtotal, name)")
         .eq("operator_id", operatorId);

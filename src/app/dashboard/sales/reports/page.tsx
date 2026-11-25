@@ -31,7 +31,7 @@ import {
 } from "chart.js";
 import { Loader2, DollarSign, ShoppingCart, Percent } from "lucide-react";
 import { useAuth } from "@/stores/auth";
-import { supabase } from "@/services/supabaseClient";
+import { db } from "@/services/db";
 import { Toast } from "@/components";
 import { inPer, rank } from "@/utils/lib/xlsx-utils";
 import { formatCurrency } from "@/utils/lib/helpers/formatCurrency";
@@ -89,7 +89,7 @@ const SalesReports = () => {
   const fetchSales = useCallback(async () => {
     if (!user) return;
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("spreadsheet_sales")
       .select("*")
       .eq("user_id", user.id);
@@ -112,7 +112,7 @@ const SalesReports = () => {
     };
     loadData();
 
-    const channel = supabase
+    const channel = db
       .channel("spreadsheet_sales-reports")
       .on(
         "postgres_changes",
@@ -122,7 +122,7 @@ const SalesReports = () => {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      db.removeChannel(channel);
     };
   }, [fetchSales]);
 

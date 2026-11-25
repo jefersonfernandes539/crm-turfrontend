@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { supabase } from "@/services/supabaseClient";
+import { db } from "@/services/db";
 import { Toast } from "@/components";
 import {
   passengerSchema,
@@ -30,7 +30,7 @@ export function VoucherFromReservation({
     const fetchReservation = async () => {
       setLoading(true);
       try {
-        const { data: reservation, error: resError } = await supabase
+        const { data: reservation, error: resError } = await db
           .from("reservations")
           .select(
             `id, code, contractor_name, embark_place, date,
@@ -43,12 +43,12 @@ export function VoucherFromReservation({
         if (resError) throw resError;
         if (!reservation) throw new Error("Reserva não encontrada");
 
-        const { data: passengers } = await supabase
+        const { data: passengers } = await db
           .from("passengers")
           .select("id, name, phone, is_infant")
           .eq("reservation_id", reservationId);
 
-        const { data: items } = await supabase
+        const { data: items } = await db
           .from("reservation_items")
           .select(
             "id, pricebook_id, name, category, date, qty, net, transfer_multiplier, subtotal"

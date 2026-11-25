@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 
 import type { Reservation } from "@/types/Reservation";
-import { supabase } from "@/services/supabaseClient";
+import { db } from "@/services/db";
 import { Toast } from "@/components";
 
 export function useReservations(searchTerm = "") {
@@ -13,7 +13,7 @@ export function useReservations(searchTerm = "") {
   const fetchReservations = useCallback(async () => {
     setLoading(true);
 
-    let query = supabase
+    let query = db
       .from("reservations")
       .select("*, operators(name), sellers(name)")
       .order("created_at", { ascending: false });
@@ -45,7 +45,7 @@ export function useReservations(searchTerm = "") {
   }, [fetchReservations]);
 
   const deleteReservation = async (id: string) => {
-    const { error: passengersError } = await supabase
+    const { error: passengersError } = await db
       .from("passengers")
       .delete()
       .eq("reservation_id", id);
@@ -58,7 +58,7 @@ export function useReservations(searchTerm = "") {
       });
       return false;
     }
-    const { error: itemsError } = await supabase
+    const { error: itemsError } = await db
       .from("reservation_items")
       .delete()
       .eq("reservation_id", id);
@@ -72,7 +72,7 @@ export function useReservations(searchTerm = "") {
       return false;
     }
 
-    const { error } = await supabase.from("reservations").delete().eq("id", id);
+    const { error } = await db.from("reservations").delete().eq("id", id);
 
     if (error) {
       Toast.Base({

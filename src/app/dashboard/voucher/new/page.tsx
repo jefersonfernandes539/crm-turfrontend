@@ -16,7 +16,7 @@ import { ClientInfoCard } from "./components/client-info-card";
 import { ItemsCard } from "./components/items-card";
 import { PassengersCard } from "./components/passengers-card";
 import { PaymentCard } from "./components/payment-card";
-import { supabase } from "@/services/supabaseClient";
+import { db } from "@/services/db";
 
 export default function NewVoucherPage() {
   const searchParams = useSearchParams();
@@ -45,7 +45,7 @@ export default function NewVoucherPage() {
 
     const fetchVoucher = async () => {
       try {
-        const { data, error } = await supabase
+        const { data, error } = await db
           .from("vouchers")
           .select("*")
           .eq("id", voucherId)

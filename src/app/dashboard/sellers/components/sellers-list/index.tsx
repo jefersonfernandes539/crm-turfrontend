@@ -29,7 +29,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { supabase } from "@/services/supabaseClient";
+import { db } from "@/services/db";
 import { Toast } from "@/components";
 import { VendedorFormData } from "../sellers-form";
 import SellersForm from "../sellers-form";
@@ -62,7 +62,7 @@ const SellersList: React.FC = () => {
   const fetchVendedores = useCallback(async () => {
     setLoading(true);
 
-    let query = supabase
+    let query = db
       .from("sellers")
       .select("*")
       .order("name", { ascending: true });
@@ -91,7 +91,7 @@ const SellersList: React.FC = () => {
   }, [fetchVendedores]);
 
   const handleDelete = async (id: string) => {
-    const { error } = await supabase.from("sellers").delete().eq("id", id);
+    const { error } = await db.from("sellers").delete().eq("id", id);
     if (error) {
       Toast.Base({
         variant: "error",
@@ -260,7 +260,7 @@ const SellersList: React.FC = () => {
             };
 
             if (editingVendedor) {
-              const { error } = await supabase
+              const { error } = await db
                 .from("sellers")
                 .update(payload)
                 .eq("id", editingVendedor.id);
@@ -273,7 +273,7 @@ const SellersList: React.FC = () => {
                 });
               } else handleFormSuccess();
             } else {
-              const { error } = await supabase.from("sellers").insert(payload);
+              const { error } = await db.from("sellers").insert(payload);
 
               if (error) {
                 Toast.Base({

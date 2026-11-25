@@ -9,6 +9,7 @@ import Sheet from "./Sheet";
 import * as Toast from "./Toast";
 import * as Button from "./Button";
 import * as Toggle from "./Toggle";
+import { PageHeader } from "./PageHeader";
 
 export {
   Layout,
@@ -22,4 +23,5 @@ export {
   Toast,
   Button,
   Toggle,
+  PageHeader,
 };

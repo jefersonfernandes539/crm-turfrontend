@@ -1,7 +1,7 @@
 // stores/auth.ts
 "use client";
 
-import { supabase } from "@/services/supabaseClient";
+import { db } from "@/services/db";
 import { create } from "zustand";
 
 type AuthState = {
@@ -21,14 +21,14 @@ export const useAuth = create<AuthState>((set) => ({
 
   // inicializa pegando sessão atual + listener
   initAuth: async () => {
-    const { data } = await supabase.auth.getSession();
+    const { data } = await db.auth.getSession();
     set({
       user: data.session?.user ?? null,
       session: data.session,
       loading: false,
     });
 
-    supabase.auth.onAuthStateChange((_event, session) => {
+    db.auth.onAuthStateChange((_event, session) => {
       set({
         user: session?.user ?? null,
         session,
@@ -39,7 +39,7 @@ export const useAuth = create<AuthState>((set) => ({
 
   onLogin: async ({ email, password }) => {
     set({ loading: true });
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await db.auth.signInWithPassword({
       email,
       password,
     });
@@ -58,7 +58,7 @@ export const useAuth = create<AuthState>((set) => ({
 
   onRegister: async ({ email, password }) => {
     set({ loading: true });
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error } = await db.auth.signUp({
       email,
       password,
     });
@@ -76,7 +76,7 @@ export const useAuth = create<AuthState>((set) => ({
   },
 
   onLogout: async () => {
-    await supabase.auth.signOut();
+    await db.auth.signOut();
     set({ user: null, session: null });
   },
 }));

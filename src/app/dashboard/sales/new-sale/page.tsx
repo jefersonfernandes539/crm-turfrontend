@@ -25,7 +25,7 @@ import { useAuth } from "@/stores/auth";
 import { getSellerOptions } from "@/utils/lib/sellers";
 import { canonical } from "@/utils/lib/canonical";
 import { Toast } from "@/components";
-import { supabase } from "@/services/supabaseClient";
+import { db } from "@/services/db";
 
 const UFS = [
   "AC",
@@ -165,7 +165,7 @@ const NewSale = () => {
       vendedor: canonical(formData.vendedor, sellers),
     };
 
-    const { error } = await supabase
+    const { error } = await db
       .from("spreadsheet_sales")
       .insert([saleToInsert]);
     setLoading(false);

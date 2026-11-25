@@ -1,11 +1,11 @@
 {
-  "name": "Meu Sistema",
-  "short_name": "Sistema",
+  "name": "TurHost CRM",
+  "short_name": "TurHost",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#0f172a",
-  "description": "Sistema Next.js com atalho para mobile",
+  "description": "Gestão de passeios, hostels, campings e hospedagens",
   "icons": [
     {
       "src": "/icons/icon-192.png",

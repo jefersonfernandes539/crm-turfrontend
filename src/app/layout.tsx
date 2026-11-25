@@ -1,7 +1,13 @@
 import { Geist } from "next/font/google";
 import { JetBrains_Mono } from "next/font/google";
 import "../app/globals.css";
+import type { Metadata } from "next";
 import { Providers } from "./providers";
+
+export const metadata: Metadata = {
+  title: "TurHost CRM",
+  description: "Gestão de passeios, hostels, campings e hospedagens",
+};
 
 
 const geistSans = Geist({
@@ -28,7 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-icon" href="/icons/icon-512.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="Meu Sistema" />
+        <meta name="apple-mobile-web-app-title" content="TurHost CRM" />
       </head>
 
       <body

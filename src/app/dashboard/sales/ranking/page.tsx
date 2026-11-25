@@ -28,7 +28,7 @@ import {
   Cell,
 } from "recharts";
 import { useAuth } from "@/stores/auth";
-import { supabase } from "@/services/supabaseClient";
+import { db } from "@/services/db";
 import { Toast } from "@/components";
 import { inPer, rank } from "@/utils/lib/xlsx-utils";
 import { formatCurrency } from "@/utils/lib/helpers/formatCurrency";
@@ -63,7 +63,7 @@ const SalesRanking: React.FC = () => {
   );
 
   const fetchSellers = useCallback(async () => {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("sellers")
       .select("name, photo_url");
     if (error) return console.error(error);
@@ -77,7 +77,7 @@ const SalesRanking: React.FC = () => {
   const fetchSales = useCallback(async () => {
     if (!user) return;
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("spreadsheet_sales")
       .select("*")
       .eq("user_id", user.id);
@@ -103,7 +103,7 @@ const SalesRanking: React.FC = () => {
 
     initialize();
 
-    const channel = supabase
+    const channel = db
       .channel("spreadsheet_sales")
       .on(
         "postgres_changes",
@@ -113,7 +113,7 @@ const SalesRanking: React.FC = () => {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      db.removeChannel(channel);
     };
   }, [fetchSellers, fetchSales]);
 

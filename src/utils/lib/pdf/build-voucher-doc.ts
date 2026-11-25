@@ -85,7 +85,7 @@ export async function buildVoucherDoc(
 
   const footer = (_currentPage: number, _pageCount: number): Content[] => [
     {
-      text: "BeachTurJeri — sua aventura começa aqui",
+      text: "TurHost CRM — sua aventura começa aqui",
       style: "footWhite",
       margin: [0, 10, 0, 10],
     },
@@ -109,7 +109,7 @@ export async function buildVoucherDoc(
       {
         stack: [
           {
-            text: "BeachTurJeri - Pacotes Turísticos",
+            text: "TurHost CRM - Turismo e Hospedagem",
             style: "hbrand",
             alignment: "center",
           },

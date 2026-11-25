@@ -24,7 +24,7 @@ import {
 import { PlusCircle, Trash2, Loader2, FileDown, TestTube2 } from "lucide-react";
 
 import dayjs from "dayjs";
-import { supabase } from "@/services/supabaseClient";
+import { db } from "@/services/db";
 import { useRouter, useSearchParams } from "next/navigation";
 import { VoucherFormData } from "@/types/Voucher";
 import { Operator } from "@/types/Operator";
@@ -46,7 +46,7 @@ async function genUniqueCode() {
       "BTJR" +
       dayjs().format("YYYYMMDDHHmmss") +
       Math.random().toString(36).slice(2, 6).toUpperCase();
-    const { data } = await supabase
+    const { data } = await db
       .from("vouchers")
       .select("id")
       .eq("codigo", code)
@@ -106,7 +106,7 @@ const NovoVoucherForm = ({ initialData, voucherId }: NovoVoucherFormProps) => {
 
   const fetchPricebook = useCallback(async (operatorId?: string) => {
     if (!operatorId) return setPricebook([]);
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("pricebook")
       .select("name, net");
     if (error) {
@@ -135,14 +135,14 @@ const NovoVoucherForm = ({ initialData, voucherId }: NovoVoucherFormProps) => {
 
   useEffect(() => {
     const fetchInitialData = async () => {
-      const { data: opData } = await supabase
+      const { data: opData } = await db
         .from("operators")
         .select("id, name, whatsapp, active")
         .eq("active", true)
         .order("name");
       if (opData) setOperators(opData as Operator[]);
 
-      const { data: sellersData } = await supabase
+      const { data: sellersData } = await db
         .from("sellers")
         .select("name")
         .eq("active", true)
@@ -215,7 +215,7 @@ const NovoVoucherForm = ({ initialData, voucherId }: NovoVoucherFormProps) => {
 
       let savedHeader: any;
       if (voucherId) {
-        const { data: updated, error } = await supabase
+        const { data: updated, error } = await db
           .from("vouchers")
           .update(voucherHeader)
           .eq("id", voucherId)
@@ -224,7 +224,7 @@ const NovoVoucherForm = ({ initialData, voucherId }: NovoVoucherFormProps) => {
         if (error) throw error;
         savedHeader = updated;
       } else {
-        const { data: inserted, error } = await supabase
+        const { data: inserted, error } = await db
           .from("vouchers")
           .insert(voucherHeader)
           .select()
@@ -235,7 +235,7 @@ const NovoVoucherForm = ({ initialData, voucherId }: NovoVoucherFormProps) => {
 
       const currentVoucherId: string = savedHeader.id;
 
-      await supabase
+      await db
         .from("voucher_itens")
         .delete()
         .eq("voucher_id", currentVoucherId);
@@ -249,7 +249,7 @@ const NovoVoucherForm = ({ initialData, voucherId }: NovoVoucherFormProps) => {
         }));
 
       if (itemsToSave.length > 0) {
-        const { error } = await supabase
+        const { error } = await db
           .from("voucher_itens")
           .insert(itemsToSave);
         if (error) throw error;

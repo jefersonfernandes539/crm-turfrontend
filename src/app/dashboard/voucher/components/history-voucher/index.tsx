@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { supabase } from "@/services/supabaseClient";
+import { db } from "@/services/db";
 import { VoucherPayload } from "@/types/Voucher";
 import { gerarVoucherPDF } from "@/utils/lib/pdf/generateVoucherpdf";
 
@@ -50,7 +50,7 @@ export function VoucherHistory() {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    const { data, error, count } = await supabase
+    const { data, error, count } = await db
       .from("vouchers")
       .select(
         `
@@ -83,7 +83,7 @@ export function VoucherHistory() {
     const vendedorIds = Array.from(new Set(data?.map((v) => v.vendedor_id).filter(Boolean)));
     let vendedoresMap: Record<string, string> = {};
     if (vendedorIds.length) {
-      const { data: sellers } = await supabase
+      const { data: sellers } = await db
         .from("sellers")
         .select("id, name")
         .in("id", vendedorIds);
@@ -112,19 +112,19 @@ export function VoucherHistory() {
     };
     fetchData();
 
-    const channel = supabase
+    const channel = db
       .channel("vouchers-changes")
       .on("postgres_changes", { event: "*", schema: "public", table: "vouchers" }, fetchVouchers)
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      db.removeChannel(channel);
     };
   }, [fetchVouchers]);
 
   const handleDelete = async (voucherId: string) => {
-    await supabase.from("voucher_itens").delete().eq("voucher_id", voucherId);
-    const { error } = await supabase.from("vouchers").delete().eq("id", voucherId);
+    await db.from("voucher_itens").delete().eq("voucher_id", voucherId);
+    const { error } = await db.from("vouchers").delete().eq("id", voucherId);
 
     if (error) {
       Toast.Base({
@@ -156,7 +156,7 @@ export function VoucherHistory() {
 
     // Buscar vendedor se não existir
     if (!payload.vendedor && voucher.vendedor_id) {
-      const { data: seller } = await supabase
+      const { data: seller } = await db
         .from("sellers")
         .select("name")
         .eq("id", voucher.vendedor_id)

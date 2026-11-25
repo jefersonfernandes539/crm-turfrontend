@@ -29,7 +29,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { supabase } from "@/services/supabaseClient";
+import { db } from "@/services/db";
 import { formatCurrency, formatDate } from "@/utils/lib/helpers/formatCurrency";
 import { getSellerOptions } from "@/utils/lib/sellers";
 import { inPer, rank } from "@/utils/lib/xlsx-utils";
@@ -94,7 +94,7 @@ const SalesHome: React.FC = () => {
 
   const fetchSales = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("spreadsheet_sales")
       .select("*");
     if (error) {
@@ -117,7 +117,7 @@ const SalesHome: React.FC = () => {
     };
     loadData();
 
-    const channel = supabase
+    const channel = db
       .channel("spreadsheet_sales")
       .on(
         "postgres_changes",
@@ -127,7 +127,7 @@ const SalesHome: React.FC = () => {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      db.removeChannel(channel);
     };
   }, [fetchSales, fetchSellers]);
 
@@ -164,7 +164,7 @@ const SalesHome: React.FC = () => {
   };
   const handleSaveSale = async (updatedSale: any) => {
     const { id, ...saleToUpdate } = updatedSale;
-    const { error } = await supabase
+    const { error } = await db
       .from("spreadsheet_sales")
       .update(saleToUpdate)
       .eq("id", id);
@@ -184,7 +184,7 @@ const SalesHome: React.FC = () => {
     }
   };
   const handleDeleteSale = async (saleToDelete: any) => {
-    const { error } = await supabase
+    const { error } = await db
       .from("spreadsheet_sales")
       .delete()
       .eq("id", saleToDelete.id);
@@ -208,7 +208,7 @@ const SalesHome: React.FC = () => {
     try {
       const {
         data: { user },
-      } = await supabase.auth.getUser();
+      } = await db.auth.getUser();
       const userId = user?.id;
 
       if (!userId) {
@@ -312,7 +312,7 @@ const SalesHome: React.FC = () => {
           };
         });
 
-      const { error } = await supabase.from("spreadsheet_sales").insert(mapped);
+      const { error } = await db.from("spreadsheet_sales").insert(mapped);
       if (error) throw error;
 
       Toast.Base({
@@ -337,7 +337,7 @@ const handleClearSales = async () => {
     const formattedNextMonth = String((nextMonth % 12) + 1).padStart(2, "0");
     const endDate = `${nextYear}-${formattedNextMonth}-01`;
 
-    const { error } = await supabase
+    const { error } = await db
       .from("spreadsheet_sales")
       .delete()
       .gte("data", startDate)

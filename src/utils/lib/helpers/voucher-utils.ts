@@ -1,4 +1,4 @@
-import { supabase } from "@/services/supabaseClient";
+import { db } from "@/services/db";
 import dayjs from "dayjs";
 
 export async function generateUniqueCode(): Promise<string> {
@@ -10,7 +10,7 @@ export async function generateUniqueCode(): Promise<string> {
       dayjs().format("YYYYMMDDHHmmss") +
       Math.random().toString(36).slice(2, 6).toUpperCase();
 
-    const { data } = await supabase
+    const { data } = await db
       .from("vouchers")
       .select("id")
       .eq("codigo", code)

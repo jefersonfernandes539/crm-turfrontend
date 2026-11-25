@@ -1,5 +1,5 @@
 import { Toast } from "@/components";
-import { supabase } from "@/services/supabaseClient";
+import { db } from "@/services/db";
 
 export const createVoucherFromReservation = async (reservation: any) => {
   try {
@@ -10,7 +10,7 @@ export const createVoucherFromReservation = async (reservation: any) => {
       "";
 
     if (!sellerName && reservation.seller_id) {
-      const { data: seller } = await supabase
+      const { data: seller } = await db
         .from("sellers")
         .select("name")
         .eq("id", reservation.seller_id)
@@ -62,7 +62,7 @@ export const createVoucherFromReservation = async (reservation: any) => {
       },
     };
 
-    const { error } = await supabase.from("vouchers").insert([voucherData]);
+    const { error } = await db.from("vouchers").insert([voucherData]);
     if (error) throw error;
 
     Toast.Base({

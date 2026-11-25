@@ -8,7 +8,7 @@ import { Resolver, useForm } from "react-hook-form";
 
 import { Toast } from "@/components";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/services/supabaseClient";
+import { db } from "@/services/db";
 
 import {
   ReservationFormValues,
@@ -57,7 +57,7 @@ const NovaReserva = () => {
   const selectedOperatorId = watch("operator_id");
 
   const fetchOperators = useCallback(async () => {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("operators")
       .select("id, name, whatsapp")
       .eq("active", true)
@@ -74,7 +74,7 @@ const NovaReserva = () => {
   }, []);
 
   const fetchSellers = useCallback(async () => {
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("sellers")
       .select("id, name")
       .eq("active", true)
@@ -98,7 +98,7 @@ const NovaReserva = () => {
         return;
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from("pricebook")
         .select("id, name, net")
         .eq("partner_id", operatorId)
@@ -177,7 +177,7 @@ Restante: ${formatCurrencyBRL(data.remaining)}
     try {
       setLoading(true);
 
-      const { data: reservationData, error: reservationError } = await supabase
+      const { data: reservationData, error: reservationError } = await db
         .from("reservations")
         .insert([
           {
@@ -212,7 +212,7 @@ Restante: ${formatCurrencyBRL(data.remaining)}
       }));
 
       if (itemsPayload.length > 0) {
-        const { error: itemsError } = await supabase
+        const { error: itemsError } = await db
           .from("reservation_items")
           .insert(itemsPayload);
         if (itemsError) throw itemsError;
@@ -226,7 +226,7 @@ Restante: ${formatCurrencyBRL(data.remaining)}
       }));
 
       if (passengersPayload.length > 0) {
-        const { error: passengersError } = await supabase
+        const { error: passengersError } = await db
           .from("passengers")
           .insert(passengersPayload);
         if (passengersError) throw passengersError;

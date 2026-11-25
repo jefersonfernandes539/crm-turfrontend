@@ -1,9 +1,9 @@
-import { supabase } from "@/services/supabaseClient";
+import { db } from "@/services/db";
 import { Toast } from "@/components";
 
 export const getSellerOptions = async (search = ""): Promise<string[]> => {
   try {
-    let query = supabase
+    let query = db
       .from("sellers")
       .select("name")
       .order("name", { ascending: true });
